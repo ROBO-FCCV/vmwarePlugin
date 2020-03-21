@@ -1,0 +1,19 @@
+[Unit]
+Description=Apache Tomcat
+After=syslog.target network.target
+
+[Service]
+Environment=JAVA_HOME=/usr/lib/java
+Type=forking
+PIDFile=/opt/plugin/vmware_plugin/tomcat/tomcat.pid
+ExecStart=/opt/plugin/vmware_plugin/tomcat/bin/startup.sh
+ExecStop=/bin/kill -s QUIT $MAINPID
+ExecReload=/bin/kill -s HUP $MAINPID
+PrivateTmp=true
+User=vmware
+Group=plugin
+PermissionsStartOnly=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

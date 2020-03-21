@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    zookeeper:
+      enabled: false
+      connect-string: 127.0.0.1:12181
+      config:
+        root: ldc/config
+        enabled: true
+        scenes: yml
+  main:
+    allow-bean-definition-overriding: true

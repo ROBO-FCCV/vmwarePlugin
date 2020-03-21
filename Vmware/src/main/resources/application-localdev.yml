@@ -1,0 +1,48 @@
+﻿﻿server:
+  port: 18085
+  context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 2048
+  tomcat:
+    accesslog:
+      enabled: false
+
+ipBlacklist:
+  ipList: 127.0.0.1,0.0.0.0
+
+endpoints:
+  metrics:
+    enabled: false
+  health:
+    enabled: false
+  env:
+    enabled: false
+  trace:
+    enabled: false
+  dump:
+    enabled: false
+  mappings:
+    enabled: false
+  configprops:
+    enabled: false
+  autoconfig:
+    enabled: false
+  beans:
+    enabled: false
+debug:
+  bypasstoken: true
+
+systemAdministrator:
+  role: sysadmin
+
+superAdministrator:
+  role: admin
+
+ribbon:
+  https: true
+  ConnectTimeout: 600000
+  ReadTimeout: 600000
+
+hystrix.command.default.execution.timeout.enabled: false

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+  ~ Copyright (c). 2020-2020. All rights reserved.
+  -->
+
+<configuration status="INFO" monitorInterval="60">
+    <Properties>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%t] %p %l - %m%n</Property>
+        <property name="log.path">/var/log/plugin/tomcat_https</property>
+    </Properties>
+    <Loggers>
+        <AsyncRoot level="INFO">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="rolling_file"/>
+        </AsyncRoot>
+    </Loggers>
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT" follow="true">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <Pattern>${pattern}</Pattern>
+            </PatternLayout>
+        </Console>
+        <RollingRandomAccessFile name="rolling_file"
+                                 fileName="${log.path}/vmware.log"
+                                 filePattern="${log.path}/vmware-%d{yyyy-MM-dd}-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <Pattern>${pattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingRandomAccessFile>
+    </Appenders>
+</configuration>
