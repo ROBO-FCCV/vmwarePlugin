@@ -31,31 +31,31 @@ Obtain the open-source tool [Apache Maven](https://maven.apache.org) and [Apache
 
 **Step 5**      Decompress the VMware source code package and copy the **lib** folder to the Vmware folder.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/1.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/1.PNG)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/2.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/2.PNG)
 
 **Step 6**      Run the following command to compile and package the folder: mvn clean package.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/3.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/3.PNG)
 
 **Step 7**      If the "BUILD SUCCESS" message is displayed, the compilation and packaging are successful, and the **target** folder is automatically generated.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/4.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/4.PNG)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/5.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/5.PNG)
 
 **Step 8**      Copy the **vmware-x.x.war** file in the **target** folder to **\tomcat_vmware\software**.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/6.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/6.PNG)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/7.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/7.PNG)
 
 **Step 9**      Copy the Apache Tomcat installation package in Preparing Tools to **\tomcat_vmware\software**.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/8.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/8.PNG)
 
 **Step 10**    Compress the **tomcat_vmware** folder into the **tomcat_vmware.tar.gz** file.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/tree/master/image/9.PNG)
+![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/9.PNG)
 
