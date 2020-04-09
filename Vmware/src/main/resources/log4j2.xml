@@ -30,9 +30,15 @@
                 <Pattern>${pattern}</Pattern>
             </PatternLayout>
             <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="30"/>
+            <DefaultRolloverStrategy max="30">
+                <Delete basePath="${log.path}" maxDepth="2">
+                    <IfFileName glob="vmware-*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
     </Appenders>
 </configuration>
