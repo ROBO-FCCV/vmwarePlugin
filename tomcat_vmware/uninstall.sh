@@ -171,6 +171,7 @@ function delete_folder()
         if [ $user_count -eq 1 ];then
             groupdel plugin >/dev/null 2>&1
         fi
+        sed -i "/\/var\/log\/plugin/d" ${CRONTAB_FILE} >> /dev/null 2>&1
     fi
     if [ -d "/opt/plugin/${serviceName}" ];then
         rm -rf /opt/plugin/${serviceName}
@@ -203,6 +204,7 @@ function stop_service()
 function log_unconfig()
 {
     sed -i "/plugin\/${VMware_item}/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
+    sed -i "/${VMware_item}/d" ${CRONTAB_FILE} >> /dev/null 2>&1
 }
 
 function del_timerOfCheckVmware_jks()
@@ -298,6 +300,7 @@ if [ $para_num -ne 0 ];then
         rm -rf /var/log/plugin
         sed -i "/plugin\/vmware_plugin_/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
         sed -i "/vmware_plugin_/d" ${CRONTAB_FILE} >> /dev/null 2>&1
+        sed -i "/\/var\/log\/plugin/d" ${CRONTAB_FILE} >> /dev/null 2>&1
         echo "Uninstall plugin success."
         exit 0
     fi
