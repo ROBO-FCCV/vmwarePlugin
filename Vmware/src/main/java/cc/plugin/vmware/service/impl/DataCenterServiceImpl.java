@@ -450,6 +450,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                 hostTo.setName(hostName);
                 hostTo.setIpAddress(hostName);
                 hostTo.setMoId(htTmp.getValue());
+                hostTo.setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
                 hostLst.add(hostTo);
             }
         }
@@ -469,6 +470,7 @@ public class DataCenterServiceImpl implements DataCenterService {
             ht.setName(hostName);
             ht.setIpAddress(hostName);
             ht.setMoId(htTmp.getValue());
+            ht.setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
             hostLst.add(ht);
         }
         clusterAndHostTo.setHosts(hostLst);
@@ -615,7 +617,8 @@ public class DataCenterServiceImpl implements DataCenterService {
                         .setStatus(hostRuntimeInfo.getConnectionState().toString())
                         .setName(hostName)
                         .setIpAddress(hostName)
-                        .setMoId(htTmp.getValue());
+                        .setMoId(htTmp.getValue())
+                        .setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
                     hosts.add(ht);
                 }
                 clusterTo.setMoId(clusterVo.getValue());
