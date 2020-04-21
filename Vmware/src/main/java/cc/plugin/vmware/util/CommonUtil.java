@@ -114,11 +114,11 @@ public class CommonUtil {
     public static String filterSymbol(String str) {
         Pattern pattern = Pattern.compile("[A-Za-z0-9]+");
         Matcher matcher = pattern.matcher(str);
-        StringBuilder result = new StringBuilder().append("vm-new");
+        StringBuilder result = new StringBuilder().append("vmNew");
         while (matcher.find()) {
             result.append(matcher.group());
         }
-        return result.toString();
+        return result.toString().substring(0, 15);
     }
 
     /**
