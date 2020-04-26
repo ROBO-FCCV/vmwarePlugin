@@ -118,7 +118,7 @@ public class CommonUtil {
         while (matcher.find()) {
             result.append(matcher.group());
         }
-        return result.toString().substring(0, 15);
+        return StringUtils.substring(result.toString(), 0, 15);
     }
 
     /**
