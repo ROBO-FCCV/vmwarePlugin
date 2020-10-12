@@ -4,9 +4,6 @@
 
 package cc.plugin.vmware.connection;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-
 import cc.plugin.vmware.constant.ErrorCode;
 import cc.plugin.vmware.exception.ApplicationException;
 import cc.plugin.vmware.exception.CustomException;
@@ -14,6 +11,9 @@ import cc.plugin.vmware.model.mo.LoginParamMo;
 import cc.plugin.vmware.util.Cipher;
 import cc.plugin.vmware.util.CommonUtil;
 import cc.plugin.vmware.util.YamlUtil;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -88,7 +88,7 @@ public class ExtendedAppUtil extends AppUtil {
             originalPassword = vmwareInfo.get("password");
             if (!CommonUtil.isIpv4Address(ip) || StringUtils.isEmpty(username) || StringUtils.isEmpty(
                 originalPassword)) {
-                logger.error("Vmware {} info is empty.", ip);
+                logger.error("Vmware info is empty.");
                 throw new CustomException(ErrorCode.VMWARE_INFO_ILLEGAL_CODE, ErrorCode.VMWARE_INFO_ILLEGAL_MSG);
             }
             break;
@@ -170,7 +170,7 @@ public class ExtendedAppUtil extends AppUtil {
             originalPassword = vmwareInfo.get("password");
             if (!CommonUtil.isIpv4Address(ip) || StringUtils.isEmpty(username) || StringUtils.isEmpty(
                 originalPassword)) {
-                logger.error("Vmware {} info is empty.", ip);
+                logger.error("Vmware info is empty.");
                 throw new CustomException(ErrorCode.VMWARE_INFO_ILLEGAL_CODE, ErrorCode.VMWARE_INFO_ILLEGAL_MSG);
             }
             break;

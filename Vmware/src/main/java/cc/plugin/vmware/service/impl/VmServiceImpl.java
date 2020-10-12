@@ -4,6 +4,39 @@
 
 package cc.plugin.vmware.service.impl;
 
+import cc.plugin.vmware.connection.ExtendedAppUtil;
+import cc.plugin.vmware.connection.ServiceConnection;
+import cc.plugin.vmware.connection.ServiceUtil;
+import cc.plugin.vmware.constant.Constant;
+import cc.plugin.vmware.constant.Constants;
+import cc.plugin.vmware.constant.DesConfig;
+import cc.plugin.vmware.constant.ErrorCode;
+import cc.plugin.vmware.exception.ApplicationException;
+import cc.plugin.vmware.exception.CustomException;
+import cc.plugin.vmware.model.vo.request.host.HostRequest;
+import cc.plugin.vmware.model.vo.request.vm.RenameVmRequest;
+import cc.plugin.vmware.model.vo.request.vm.SnapshotRequest;
+import cc.plugin.vmware.model.vo.response.vm.Disk;
+import cc.plugin.vmware.model.vo.response.vm.LinuxSystemType;
+import cc.plugin.vmware.model.vo.response.vm.Net;
+import cc.plugin.vmware.model.vo.response.vm.Network;
+import cc.plugin.vmware.model.vo.response.vm.OtherSystemType;
+import cc.plugin.vmware.model.vo.response.vm.VMVo;
+import cc.plugin.vmware.model.vo.response.vm.VcenterType;
+import cc.plugin.vmware.model.vo.response.vm.VmByHostIpRes;
+import cc.plugin.vmware.model.vo.response.vm.VmInfo;
+import cc.plugin.vmware.model.vo.response.vm.VmOverStatus;
+import cc.plugin.vmware.model.vo.response.vm.VmResponseVo;
+import cc.plugin.vmware.model.vo.response.vm.VmStatus;
+import cc.plugin.vmware.model.vo.response.vm.VmStatusVo;
+import cc.plugin.vmware.model.vo.response.vm.VncVo;
+import cc.plugin.vmware.model.vo.response.vm.WindowsSystemType;
+import cc.plugin.vmware.service.VmService;
+import cc.plugin.vmware.util.Cipher;
+import cc.plugin.vmware.util.CommonUtil;
+import cc.plugin.vmware.util.Des;
+import cc.plugin.vmware.util.Version;
+
 import com.alibaba.fastjson.JSONObject;
 import com.vmware.vim25.AboutInfo;
 import com.vmware.vim25.Description;
@@ -44,44 +77,13 @@ import com.vmware.vim25.VirtualE1000E;
 import com.vmware.vim25.VirtualHardware;
 import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineGuestSummary;
-import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VirtualMachineRuntimeInfo;
 import com.vmware.vim25.VirtualMachineSummary;
+import com.vmware.vim25.VirtualMachineTicket;
 import com.vmware.vim25.VirtualMachineToolsStatus;
 import com.vmware.vim25.VirtualVmxnet3;
 import com.vmware.vim25.VmConfigFaultFaultMsg;
 import com.vmware.vim25.VmToolsUpgradeFaultFaultMsg;
-
-import cc.plugin.vmware.connection.ExtendedAppUtil;
-import cc.plugin.vmware.connection.ServiceConnection;
-import cc.plugin.vmware.connection.ServiceUtil;
-import cc.plugin.vmware.constant.Constants;
-import cc.plugin.vmware.constant.DesConfig;
-import cc.plugin.vmware.constant.ErrorCode;
-import cc.plugin.vmware.exception.ApplicationException;
-import cc.plugin.vmware.exception.CustomException;
-import cc.plugin.vmware.model.vo.request.host.HostRequest;
-import cc.plugin.vmware.model.vo.request.vm.RenameVmRequest;
-import cc.plugin.vmware.model.vo.request.vm.SnapshotRequest;
-import cc.plugin.vmware.model.vo.response.vm.Disk;
-import cc.plugin.vmware.model.vo.response.vm.LinuxSystemType;
-import cc.plugin.vmware.model.vo.response.vm.Net;
-import cc.plugin.vmware.model.vo.response.vm.Network;
-import cc.plugin.vmware.model.vo.response.vm.OtherSystemType;
-import cc.plugin.vmware.model.vo.response.vm.VMVo;
-import cc.plugin.vmware.model.vo.response.vm.VcenterType;
-import cc.plugin.vmware.model.vo.response.vm.VmByHostIpRes;
-import cc.plugin.vmware.model.vo.response.vm.VmInfo;
-import cc.plugin.vmware.model.vo.response.vm.VmOverStatus;
-import cc.plugin.vmware.model.vo.response.vm.VmResponseVo;
-import cc.plugin.vmware.model.vo.response.vm.VmStatus;
-import cc.plugin.vmware.model.vo.response.vm.VmStatusVo;
-import cc.plugin.vmware.model.vo.response.vm.VncVo;
-import cc.plugin.vmware.model.vo.response.vm.WindowsSystemType;
-import cc.plugin.vmware.service.VmService;
-import cc.plugin.vmware.util.Cipher;
-import cc.plugin.vmware.util.CommonUtil;
-import cc.plugin.vmware.util.Des;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -106,6 +108,10 @@ import javax.xml.ws.soap.SOAPFaultException;
 @Service
 public class VmServiceImpl implements VmService {
     private static final Logger logger = LoggerFactory.getLogger(VmServiceImpl.class);
+    /**
+     * 使用HTML console SDK的VMware分水岭版本
+     */
+    private static final String HTML_CONSOLE_VERSION = "7.0";
 
     /**
      * The Extended app util.
@@ -123,14 +129,9 @@ public class VmServiceImpl implements VmService {
     private DesConfig desConfig;
 
     @Override
-    public VmStatus powerOn(String vmwareId, String vmName) throws
-        CustomException,
-        RuntimeFaultFaultMsg,
-        InsufficientResourcesFaultFaultMsg,
-        FileFaultFaultMsg,
-        VmConfigFaultFaultMsg,
-        TaskInProgressFaultMsg,
-        InvalidStateFaultMsg {
+    public VmStatus powerOn(String vmwareId, String vmName)
+        throws CustomException, RuntimeFaultFaultMsg, InsufficientResourcesFaultFaultMsg, FileFaultFaultMsg,
+        VmConfigFaultFaultMsg, TaskInProgressFaultMsg, InvalidStateFaultMsg {
         VmStatus vmStatus = new VmStatus();
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ServiceConnection serviceConnection;
@@ -265,7 +266,7 @@ public class VmServiceImpl implements VmService {
             String hostName = (String) ip;
             ManagedObjectReference hostSystem = svc.getDecendentMoRef(null, "HostSystem", hostName);
             if (hostSystem == null) {
-                logger.error("getVmByHost get host: " + hostName + " not found!!");
+                logger.error("getVmByHost get host: {} not found!!", hostName);
                 continue;
             }
 
@@ -315,13 +316,9 @@ public class VmServiceImpl implements VmService {
     }
 
     @Override
-    public String deleteVm(String vmwareId, String vmId, String vmName) throws
-        CustomException,
-        InvalidStateFaultMsg,
-        InterruptedException,
-        TaskInProgressFaultMsg,
-        RuntimeFaultFaultMsg,
-        VimFaultFaultMsg {
+    public String deleteVm(String vmwareId, String vmId, String vmName)
+        throws CustomException, InvalidStateFaultMsg, InterruptedException, TaskInProgressFaultMsg,
+        RuntimeFaultFaultMsg, VimFaultFaultMsg {
         String message = "";
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ecb.connect();
@@ -342,11 +339,8 @@ public class VmServiceImpl implements VmService {
         return message;
     }
 
-    private String setResult(VimPortType service, String vmId, String vmName, ServiceUtil svc) throws
-        RuntimeFaultFaultMsg,
-        VimFaultFaultMsg,
-        InvalidStateFaultMsg,
-        TaskInProgressFaultMsg,
+    private String setResult(VimPortType service, String vmId, String vmName, ServiceUtil svc)
+        throws RuntimeFaultFaultMsg, VimFaultFaultMsg, InvalidStateFaultMsg, TaskInProgressFaultMsg,
         InterruptedException {
         ManagedObjectReference vmReference = new ManagedObjectReference();
         ManagedObjectReference taskReference = null;
@@ -458,10 +452,10 @@ public class VmServiceImpl implements VmService {
 
                 return JSONObject.toJSONString(reNameTask);
             } catch (DuplicateNameFaultMsg e) {
-                logger.info("rename error...{}", e);
+                logger.info("rename error...", e);
                 throw new ApplicationException(ErrorCode.SYSTEM_ERROR_CODE, e.getMessage());
             } catch (InvalidNameFaultMsg e) {
-                logger.info("rename error...{} ", e);
+                logger.info("rename error... ", e);
                 throw new ApplicationException(ErrorCode.SYSTEM_ERROR_CODE, e.getMessage());
             }
         }
@@ -613,6 +607,13 @@ public class VmServiceImpl implements VmService {
             pwd = (String) optionValue.getValue();
         }
         return pwd;
+    }
+
+    private Boolean getVncEnabled(boolean vncEnabled, OptionValue optionValue) {
+        if (Constants.VNC_ENABLED.equals(optionValue.getKey())) {
+            vncEnabled = Boolean.parseBoolean(String.valueOf(optionValue.getValue()));
+        }
+        return vncEnabled;
     }
 
     private String getPort(String port, OptionValue optionValue) {
@@ -800,10 +801,11 @@ public class VmServiceImpl implements VmService {
         }
         String pwd = null;
         String port = null;
+        boolean vncEnabled = false;
         for (OptionValue optionValue : config.getExtraConfig()) {
             port = getPort(port, optionValue);
             pwd = getPwd(pwd, optionValue);
-
+            vncEnabled = getVncEnabled(vncEnabled, optionValue);
         }
         List<ManagedObjectReference> managedList = (List<ManagedObjectReference>) svc.getDynamicProperty(vmRef,
             "network");
@@ -814,10 +816,31 @@ public class VmServiceImpl implements VmService {
                 "host");
             vncVo.setVncHost(checkHostList(svc, vmId, hostList));
         }
-
+        String vmName = (String) svc.getDynamicProperty(vmRef, "name");
+        vncVo.setVmName(vmName);
+        vncVo.setVersion(serviceConnection.getServiceContent().getAbout().getVersion());
         vncVo.setVncHelso(pwd);
         vncVo.setVncPort(port);
-        vncVo.setVersion("");
+        vncVo.setVncEnabled(vncEnabled);
+        return getHtmlConsoleTicket(vncVo, serviceConnection, vmRef);
+    }
+
+    private VncVo getHtmlConsoleTicket(VncVo vncVo, ServiceConnection serviceConnection, ManagedObjectReference vmRef)
+        throws CustomException {
+        try {
+            Version version = new Version(vncVo.getVersion());
+            Version version7 = new Version(HTML_CONSOLE_VERSION);
+            if (version.compareTo(version7) >= 0) {
+                VirtualMachineTicket virtualMachineTicket = serviceConnection.getVimPort()
+                    .acquireTicket(vmRef, "webmks");
+                vncVo.setTicket(virtualMachineTicket.getTicket());
+                vncVo.setVncPort(String.valueOf(virtualMachineTicket.getPort()));
+                vncVo.setVncHost(virtualMachineTicket.getHost());
+                vncVo.setVncEnabled(false);
+            }
+        } catch (RuntimeFaultFaultMsg | InvalidStateFaultMsg invalidStateFaultMsg) {
+            throw new CustomException(ErrorCode.FAILED_CODE, ErrorCode.VMWARE_INFO_ILLEGAL_MSG);
+        }
         return vncVo;
     }
 
@@ -880,11 +903,8 @@ public class VmServiceImpl implements VmService {
     }
 
     @Override
-    public void mountVMToolsInstaller(String vmwareId, String vmId) throws
-        CustomException,
-        VmToolsUpgradeFaultFaultMsg,
-        RuntimeFaultFaultMsg,
-        InvalidStateFaultMsg,
+    public void mountVMToolsInstaller(String vmwareId, String vmId)
+        throws CustomException, VmToolsUpgradeFaultFaultMsg, RuntimeFaultFaultMsg, InvalidStateFaultMsg,
         VmConfigFaultFaultMsg {
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ecb.connect();
@@ -898,57 +918,6 @@ public class VmServiceImpl implements VmService {
         vmRef.setValue(vmId);
         service.mountToolsInstaller(vmRef);
         logger.info("mountVMToolsInstaller success.");
-    }
-
-    private String markTemplate(ServiceUtil svc, VimPortType service, ManagedObjectReference vmRef,
-        VirtualMachineToolsStatus ToolsIsInstall) throws
-        InvalidStateFaultMsg,
-        RuntimeFaultFaultMsg,
-        TaskInProgressFaultMsg,
-        InterruptedException,
-        FileFaultFaultMsg,
-        VmConfigFaultFaultMsg {
-        GuestInfo guestinfo;
-        String result = "";
-        long startTime = System.currentTimeMillis();
-        while (true) {
-            long endTime = System.currentTimeMillis();
-            long breakTime = endTime - startTime;
-
-            if (ToolsIsInstall.toString().equals("TOOLS_NOT_INSTALLED")) {
-                guestinfo = (GuestInfo) svc.getDynamicProperty(vmRef, "guest");
-                ToolsIsInstall = guestinfo.getToolsStatus();
-                if (breakTime > 300000) {
-                    result = "notInstallvmtools";
-                    break;
-                }
-
-            } else {
-                break;
-            }
-        }
-        return result;
-    }
-
-    private void markTemplate(ServiceUtil svc, VimPortType service, ManagedObjectReference vmRef) throws
-        InvalidStateFaultMsg,
-        RuntimeFaultFaultMsg,
-        TaskInProgressFaultMsg,
-        InterruptedException,
-        FileFaultFaultMsg,
-        VmConfigFaultFaultMsg {
-        service.powerOffVMTask(vmRef);
-        while (true) {
-            VirtualMachineRuntimeInfo virtualMachineRuntimeInfo = (VirtualMachineRuntimeInfo) svc.getDynamicProperty(
-                vmRef, "runtime");
-            VirtualMachinePowerState virtualMachinePowerState = virtualMachineRuntimeInfo.getPowerState();
-            if ("poweredOff".equalsIgnoreCase(virtualMachinePowerState.value())) {
-                break;
-            }
-        }
-        TimeUnit.SECONDS.sleep(3);
-        service.markAsTemplate(vmRef);
-
     }
 
     @Override
@@ -1076,8 +1045,7 @@ public class VmServiceImpl implements VmService {
         try {
             RetrieveResult retrieveResult = vimPort.retrievePropertiesEx(propCollectorRef, listpfs,
                 propObjectRetrieveOpts);
-            if (retrieveResult != null && retrieveResult.getObjects() != null && !retrieveResult
-                .getObjects()
+            if (retrieveResult != null && retrieveResult.getObjects() != null && !retrieveResult.getObjects()
                 .isEmpty()) {
                 objectContents.addAll(retrieveResult.getObjects());
             }
@@ -1127,16 +1095,9 @@ public class VmServiceImpl implements VmService {
     }
 
     @Override
-    public String createSnapshot(String vmwareId, SnapshotRequest snapshotRequest) throws
-        InterruptedException,
-        SnapshotFaultFaultMsg,
-        InvalidNameFaultMsg,
-        VmConfigFaultFaultMsg,
-        FileFaultFaultMsg,
-        RuntimeFaultFaultMsg,
-        TaskInProgressFaultMsg,
-        InvalidStateFaultMsg,
-        CustomException {
+    public String createSnapshot(String vmwareId, SnapshotRequest snapshotRequest)
+        throws InterruptedException, SnapshotFaultFaultMsg, InvalidNameFaultMsg, VmConfigFaultFaultMsg,
+        FileFaultFaultMsg, RuntimeFaultFaultMsg, TaskInProgressFaultMsg, InvalidStateFaultMsg, CustomException {
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ecb.connect();
         ServiceConnection serviceConnection = ecb.getConnection();
@@ -1268,6 +1229,66 @@ public class VmServiceImpl implements VmService {
         return result;
     }
 
+    @Override
+    public String powerOnVmTask(String vmwareId, String vmId) throws CustomException {
+        ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
+        ecb.connect();
+        ServiceConnection serviceConnection = ecb.getConnection();
+        if (serviceConnection == null) {
+            logger.error("ServiceConnection is null.");
+            throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
+        }
+        VimPortType service = serviceConnection.getVimPort();
+        ManagedObjectReference vmRef = new ManagedObjectReference();
+        vmRef.setType(Constant.VIRTUAL_MACHINE);
+        vmRef.setValue(vmId);
+        ManagedObjectReference powerOnVMTask;
+        if (service == null) {
+            logger.error("Service is null.");
+            throw new CustomException(ErrorCode.SYSTEM_ERROR_CODE, ErrorCode.SYSTEM_ERROR_MSG);
+        }
+        try {
+            powerOnVMTask = service.powerOnVMTask(vmRef, null);
+        } catch (FileFaultFaultMsg | InsufficientResourcesFaultFaultMsg | VmConfigFaultFaultMsg | InvalidStateFaultMsg | RuntimeFaultFaultMsg | TaskInProgressFaultMsg ex) {
+            logger.error("PowerOn exception", ex);
+            throw new ApplicationException(ErrorCode.SYSTEM_ERROR_CODE, ex.getMessage());
+        }
+        if (powerOnVMTask == null) {
+            throw new CustomException(ErrorCode.SYSTEM_ERROR_CODE, ErrorCode.SYSTEM_ERROR_MSG);
+        }
+        return powerOnVMTask.getValue();
+    }
+
+    @Override
+    public String powerOffVmTask(String vmwareId, String vmId) throws CustomException {
+        ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
+        ecb.connect();
+        ServiceConnection serviceConnection = ecb.getConnection();
+        if (serviceConnection == null) {
+            logger.error("serviceConnection is null.");
+            throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
+        }
+        VimPortType service = serviceConnection.getVimPort();
+        ManagedObjectReference vmRef = new ManagedObjectReference();
+        vmRef.setType(Constant.VIRTUAL_MACHINE);
+        vmRef.setValue(vmId);
+        ManagedObjectReference powerOffVMTask;
+        if (service == null) {
+            logger.error("Service is null.");
+            throw new CustomException(ErrorCode.SYSTEM_ERROR_CODE, ErrorCode.SYSTEM_ERROR_MSG);
+        }
+        try {
+            powerOffVMTask = service.powerOffVMTask(vmRef);
+        } catch (InvalidStateFaultMsg | RuntimeFaultFaultMsg | TaskInProgressFaultMsg exc) {
+            logger.error("PowerOff exception", exc);
+            throw new ApplicationException(exc.getMessage(), exc);
+        }
+        if (powerOffVMTask == null) {
+            throw new CustomException(ErrorCode.SYSTEM_ERROR_CODE, ErrorCode.SYSTEM_ERROR_MSG);
+        }
+        return powerOffVMTask.getValue();
+    }
+
     private void clusterHostsHandle(ServiceUtil svc, List<ManagedObjectReference> clusterLst, List<VMVo> result) {
         if (clusterLst != null) {
             for (ManagedObjectReference clusterVo : clusterLst) {
@@ -1368,7 +1389,6 @@ public class VmServiceImpl implements VmService {
             "childEntity");
         for (ManagedObjectReference tmpHost : hostTempList) {
             String hostName = (String) svc.getDynamicProperty(tmpHost, "name");
-            logger.info("hostName..{}", hostName);
             List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(tmpHost,
                 "host");
             for (ManagedObjectReference htTmp : hostlist) {

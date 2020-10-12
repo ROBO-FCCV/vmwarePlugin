@@ -1,24 +1,24 @@
 #!/bin/bash
-logfilePath="/var/log/plugin"
+logfile_path="/var/log/plugin"
 vmware_information_conf=/opt/plugin/conf/vmware_information.conf
 mkdir -p /var/log/plugin
-touch ${logfilePath}/registry_cps.log
+touch ${logfile_path}/registry_cps.log
 function log_info ()
 {
     DATE_N=`date "+%Y-%m-%d %H:%M:%S"`
     USER_N=`whoami`
-    echo "${DATE_N} ${USER_N} execute $0 [INFO] $@" >>$logfilePath/registry_cps.log
+    echo "${DATE_N} ${USER_N} execute $0 [INFO] $@" >>${logfile_path}/registry_cps.log
 }
 
 function log_error ()
 {
     DATE_N=`date "+%Y-%m-%d %H:%M:%S"`
     USER_N=`whoami`
-    echo -e "\033[41;37m ${DATE_N} ${USER_N} execute $0 [ERROR] $@ \033[0m"  >>$logfilePath/registry_cps.log
+    echo -e "\033[41;37m ${DATE_N} ${USER_N} execute $0 [ERROR]] $@ \033[0m"  >>${logfile_path}/registry_cps.log
 }
 
 function fn_log ()  {
-    if [  $? -eq 0  ]
+    if [[  $? -eq 0  ]]
     then
         log_info "$@ succeeded."
     else
@@ -29,7 +29,7 @@ function fn_log ()  {
 }
 
 function check(){
-    if [ ! -f ${vmware_information_conf} ];then
+    if [[ ! -f ${vmware_information_conf} ]];then
         echo "The plugin is not installed"
         exit 0
     fi

@@ -23,7 +23,6 @@ import cc.plugin.vmware.model.vo.response.vm.TaskVmVo;
 import cc.plugin.vmware.util.CommonUtil;
 import cc.plugin.vmware.util.StringRandom;
 
-import com.alibaba.fastjson.JSON;
 import com.vmware.connection.helpers.builders.ObjectSpecBuilder;
 import com.vmware.connection.helpers.builders.PropertyFilterSpecBuilder;
 import com.vmware.connection.helpers.builders.PropertySpecBuilder;
@@ -49,9 +48,6 @@ import com.vmware.vim25.Description;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.DynamicProperty;
 import com.vmware.vim25.FileFaultFaultMsg;
-import com.vmware.vim25.GuestInfo;
-import com.vmware.vim25.GuestOperationsFaultFaultMsg;
-import com.vmware.vim25.GuestProgramSpec;
 import com.vmware.vim25.HostHardwareInfo;
 import com.vmware.vim25.InsufficientResourcesFaultFaultMsg;
 import com.vmware.vim25.InvalidDatastoreFaultMsg;
@@ -59,7 +55,6 @@ import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.InvalidStateFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.MigrationFaultFaultMsg;
-import com.vmware.vim25.NamePasswordAuthentication;
 import com.vmware.vim25.ObjectContent;
 import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.PropertyFilterSpec;
@@ -88,7 +83,6 @@ import com.vmware.vim25.VirtualMachineCloneSpec;
 import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineRelocateSpec;
-import com.vmware.vim25.VirtualMachineRuntimeInfo;
 import com.vmware.vim25.VirtualPCNet32;
 import com.vmware.vim25.VirtualSCSIController;
 import com.vmware.vim25.VirtualVmxnet3;
@@ -107,7 +101,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -134,6 +127,7 @@ public class VmByTemplateImpl extends AbstractVmService {
 
     @Override
     public TaskVmVo createVmByTemplate(String vmwareId, VmConfigTemplate vmConfigTemplate) throws CustomException {
+        LOGGER.info("###create vm by template, params={}",vmConfigTemplate);
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ecb.connect();
         ServiceConnection serviceConnection = ecb.getConnection();
@@ -438,8 +432,6 @@ public class VmByTemplateImpl extends AbstractVmService {
         VirtualEthernetCard virtualEthernetCard = new VirtualVmxnet3();
         VirtualEthernetCardNetworkBackingInfo nicBackingInfo = new VirtualEthernetCardNetworkBackingInfo();
         nicBackingInfo.setDeviceName(portGroup);
-
-        LOGGER.debug(" network macAddress is {}", macAddress);
         if (macAddress == null) {
             virtualEthernetCard.setAddressType("Generated");
         } else { // 手动设置macaddress
@@ -470,8 +462,6 @@ public class VmByTemplateImpl extends AbstractVmService {
         portConn.setSwitchUuid(newwork.getSwitchUuid());
         nicBacking.setPort(portConn);
         virtualEthernetCard.setBacking(nicBacking);
-
-        LOGGER.debug(" network macAddress is {}", newwork.getMacAddress());
         if (newwork.getMacAddress() == null) {
             virtualEthernetCard.setAddressType("Generated");
         } else { // 手动设置macaddress

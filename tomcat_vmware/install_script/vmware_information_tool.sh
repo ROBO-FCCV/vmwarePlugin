@@ -1,6 +1,6 @@
 #!/bin/bash
 currentDir=$(cd `dirname $0`; pwd)
-if [ ${currentDir} == "." ];then
+if [[ ${currentDir} == "." ]];then
     currentDir=$PWD
 fi
 base_dir=/opt/plugin
@@ -14,8 +14,8 @@ function vcenter_list(){
     echo ""
     cd ${currentDir}
     for item in `ls ${currentDir}`;do
-        [ -d $item ] && dir=$item
-        if [[ $dir =~ "vmware_plugin_" ]];then
+        [[ -d ${item} ]] && dir=${item}
+        if [[ ${dir} =~ "vmware_plugin_" ]];then
             vcenter_file=${dir}/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml
             echo "-------${dir}-------"
             grep -v password ${vcenter_file} | grep -v vmwareId | more
@@ -29,8 +29,8 @@ function port_list(){
     echo ""
     cd ${currentDir}
     for item in `ls ${currentDir}`;do
-        [ -d $item ] && dir=$item
-        if [[ $dir =~ "vmware_plugin_" ]];then
+        [[ -d ${item} ]] && dir=${item}
+        if [[ ${dir} =~ "vmware_plugin_" ]];then
             vmware_plugin_file=${dir}/conf/install.conf
             vmware_name=`grep vmware_name ${vmware_plugin_file} | awk -F"=" '{print $2}'`
             vmware_getport=`grep vmware_getport ${vmware_plugin_file} | awk -F"=" '{print $2}'`
@@ -40,10 +40,10 @@ function port_list(){
 }
 
 function check_para(){
-    if [[ ! $options =~ $1  ]];then
+    if [[ ! ${options} =~ $1  ]];then
         echo "usage: sh information_tool.sh {port|account} "
         exit 1
-    elif [ $para_num -ne 1 ];then
+    elif [[ ${para_num} -ne 1 ]];then
         echo "usage: sh information_tool.sh {port|account} "
         exit 1
     fi

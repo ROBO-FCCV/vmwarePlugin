@@ -4,12 +4,14 @@
 
 package cc.plugin.vmware.restcontroller;
 
+import com.vmware.vim25.TaskInfo;
+
 import cc.plugin.vmware.constant.Constant;
 import cc.plugin.vmware.constant.ErrorCode;
 import cc.plugin.vmware.exception.CustomException;
 import cc.plugin.vmware.model.common.RestResult;
+import cc.plugin.vmware.model.to.TaskTo;
 import cc.plugin.vmware.service.TaskService;
-
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
@@ -68,6 +70,29 @@ public class TaskController {
             result.setMsg(e.getMessage());
         } catch (Exception e) {
             logger.error("Vmware getTaskStatus failed", e);
+            result.setCode(ErrorCode.SYSTEM_ERROR_CODE);
+            result.setMsg(ErrorCode.SYSTEM_ERROR_MSG);
+        }
+        return result;
+    }
+
+    @ApiOperation("查询任务信息")
+    @GetMapping("/v1/{vmwareId}/tasks/{taskId}")
+    public RestResult<TaskTo> getTask(@PathVariable("vmwareId")
+    @ApiParam(value = "Vmware ID", example = "f156b5da25024452b3d7ba8bd1022698", required = true)
+    @Pattern(regexp = Constant.ID_REGEXP) String vmwareId,
+        @PathVariable("taskId") @ApiParam(value = "任务ID", example = "task-1470", required = true) String taskId) {
+        RestResult<TaskTo> result = new RestResult<>();
+        try {
+            TaskTo status = taskService.getTask(vmwareId, taskId);
+            result.setCode(ErrorCode.SUCCESS_CODE);
+            result.setMsg("Vmware getTask successfully");
+            result.setData(status);
+        } catch (CustomException e) {
+            result.setCode(e.getErrorCode());
+            result.setMsg(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Vmware getTask failed", e);
             result.setCode(ErrorCode.SYSTEM_ERROR_CODE);
             result.setMsg(ErrorCode.SYSTEM_ERROR_MSG);
         }

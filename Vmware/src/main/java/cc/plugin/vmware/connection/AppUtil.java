@@ -12,7 +12,6 @@ import cc.plugin.vmware.util.CommonUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -75,7 +74,7 @@ public class AppUtil {
         // IP检查
         String ip = this.getIp();
         if (!CommonUtil.ipCanBeConnectedDiffIpVersion(ip, Constant.IPV4)) {
-            logger.error("The IP {} is unreachable", ip);
+            logger.error("The IP is unreachable");
             throw new CustomException(ErrorCode.CONNECT_VCENTER_ERROR_CODE, ErrorCode.CONNECT_VCENTER_ERROR_MSG);
         }
         int localVersion = connectVersion.get();

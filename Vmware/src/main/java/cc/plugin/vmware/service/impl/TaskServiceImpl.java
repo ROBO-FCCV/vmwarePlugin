@@ -4,15 +4,20 @@
 
 package cc.plugin.vmware.service.impl;
 
-import cc.plugin.vmware.connection.ExtendedAppUtil;
-import cc.plugin.vmware.connection.ServiceUtil;
-import cc.plugin.vmware.constant.ErrorCode;
-import cc.plugin.vmware.exception.CustomException;
-import cc.plugin.vmware.service.TaskService;
-
 import com.vmware.vim25.GuestInfo;
 import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.TaskInfo;
 import com.vmware.vim25.VirtualMachineRuntimeInfo;
+
+import cc.plugin.vmware.connection.ExtendedAppUtil;
+import cc.plugin.vmware.connection.ServiceUtil;
+import cc.plugin.vmware.constant.Constant;
+import cc.plugin.vmware.constant.ErrorCode;
+import cc.plugin.vmware.exception.CustomException;
+import cc.plugin.vmware.model.to.LocalizedMethodFaultTo;
+import cc.plugin.vmware.model.to.TaskTo;
+import cc.plugin.vmware.service.TaskService;
+import cc.plugin.vmware.util.BeanConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,5 +84,26 @@ public class TaskServiceImpl implements TaskService {
                 guestStatus) && "poweredOn".equalsIgnoreCase(powderState);
         }
         return isRunning;
+    }
+
+    @Override
+    public TaskTo getTask(String vmwareId, String taskId) throws CustomException {
+        ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
+        ecb.connect();
+        ServiceUtil svc = ecb.getServiceUtil();
+        if (svc == null || svc.connection == null) {
+            logger.error("serviceConnection is null.");
+            throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
+        }
+        ManagedObjectReference taskRef = new ManagedObjectReference();
+        taskRef.setType(Constant.TASK);
+        taskRef.setValue(taskId);
+        TaskInfo taskInfo = (TaskInfo) svc.getDynamicProperty(taskRef, Constant.INFO);
+        return BeanConverter.convertWithClass(taskInfo, TaskTo.class, null, ((sourceObject, targetObject) -> {
+            targetObject.setState(sourceObject.getState().value());
+            targetObject.setError(
+                new LocalizedMethodFaultTo().setLocalizedMessage(sourceObject.getError() != null ?
+                    sourceObject.getError().getLocalizedMessage() : null));
+        }));
     }
 }

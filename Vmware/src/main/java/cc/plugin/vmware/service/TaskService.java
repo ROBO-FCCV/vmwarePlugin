@@ -5,11 +5,12 @@
 package cc.plugin.vmware.service;
 
 import cc.plugin.vmware.exception.CustomException;
+import cc.plugin.vmware.model.to.TaskTo;
 
 /**
  * 功能描述
  *
- * @since 2019 -09-21
+ * @since 2019-09-21
  */
 public interface TaskService {
 
@@ -22,4 +23,14 @@ public interface TaskService {
      * @throws CustomException the custom exception
      */
     String getTaskStatus(String vmwareId, String vmId) throws CustomException;
+
+    /**
+     * Gets task.
+     *
+     * @param vmwareId the vmware id
+     * @param taskId the task id
+     * @return the task
+     * @throws CustomException the custom exception
+     */
+    TaskTo getTask(String vmwareId, String taskId) throws CustomException;
 }

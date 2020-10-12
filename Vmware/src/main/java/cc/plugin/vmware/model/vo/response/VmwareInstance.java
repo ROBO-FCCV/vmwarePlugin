@@ -57,7 +57,7 @@ public class VmwareInstance {
             String ip = vmwareInfo.get("ip");
             String vmwareId = vmwareInfo.get("vmwareId");
             if (StringUtils.isEmpty(vmwareId)) {
-                logger.error("Vmware {} has not been initialized.", ip);
+                logger.error("Vmware has not been initialized.");
                 continue;
             }
             instances.add(new VmwareInstance().setIp(ip).setVmwareId(vmwareId));

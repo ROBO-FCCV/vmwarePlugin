@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
  * @since 2019 -09-19
  */
 @Component
+@ConditionalOnProperty(value = "security.enabled", havingValue = "true", matchIfMissing = true)
 public class SecurityFilter implements Filter {
     private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
 
@@ -116,8 +118,7 @@ public class SecurityFilter implements Filter {
             WebUtil.formatResponse(response, new RestResult(ErrorCode.UNAUTHORIZED_CODE, ErrorCode.UNAUTHORIZED_MSG));
             return false;
         }
-        List<TokenVo> tokens = Optional
-            .ofNullable(tokenCache.getTokens(WebUtil.getClientIp(request)))
+        List<TokenVo> tokens = Optional.ofNullable(tokenCache.getTokens(WebUtil.getClientIp(request)))
             .orElseGet(ArrayList::new);
         if (!checkTokenValid(token, tokens)) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());

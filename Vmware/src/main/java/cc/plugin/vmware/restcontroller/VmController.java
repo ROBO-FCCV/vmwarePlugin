@@ -302,6 +302,72 @@ public class VmController {
     }
 
     /**
+     * 提交虚拟机上电任务
+     *
+     * @param vmwareId the vmware id
+     * @param vmId the vm id
+     * @return 上电结果 rest result
+     */
+    @ApiOperation("提交虚拟机上电任务")
+    @PostMapping("/v1/{vmwareId}/vms/{vmId}/action/powerOnVmTask")
+    public RestResult<String> powerOnVmTask(
+        @PathVariable("vmwareId")
+        @ApiParam(value = "Vmware ID", example = "f156b5da25024452b3d7ba8bd1022698", required = true)
+        @Pattern(regexp = Constant.ID_REGEXP) String vmwareId,
+        @PathVariable("vmId")
+        @ApiParam(value = "虚拟机ID", example = "vm-1470", required = true)
+            String vmId) {
+        RestResult<String> result = new RestResult<>();
+        try {
+            result.setCode(CommonConstants.SUCCESS);
+            result.setMsg("Power on vm task success");
+            result.setData(vmServiceImpl.powerOnVmTask(vmwareId, vmId));
+        } catch (CustomException exception) {
+            result.setCode(exception.getErrorCode());
+            result.setMsg(exception.getMessage());
+        } catch (Exception e) {
+            result.setCode(ErrorCode.FAILED_CODE);
+            result.setMsg(e.getMessage());
+            LOGGER.error("PowerOnVmTask exception :", e);
+        }
+
+        return result;
+    }
+
+    /**
+     * 提交虚拟机下电任务
+     *
+     * @param vmwareId the vmware id
+     * @param vmId 参数
+     * @return 下电结果 rest result
+     */
+    @ApiOperation("提交虚拟机下电任务")
+    @PostMapping("/v1/{vmwareId}/vms/{vmId}/action/powerOffVmTask")
+    public RestResult<String> powerOffVmTask(
+        @PathVariable("vmwareId")
+        @ApiParam(value = "Vmware ID", example = "f156b5da25024452b3d7ba8bd1022698", required = true)
+        @Pattern(regexp = Constant.ID_REGEXP) String vmwareId,
+        @PathVariable("vmId")
+        @ApiParam(value = "虚拟机ID", example = "vm-1470", required = true)
+            String vmId) {
+        RestResult<String> result = new RestResult<>();
+        try {
+            result.setCode(CommonConstants.SUCCESS);
+            result.setMsg("Power off vm task success");
+            result.setData(vmServiceImpl.powerOffVmTask(vmwareId, vmId));
+        } catch (CustomException exception) {
+            result.setCode(exception.getErrorCode());
+            result.setMsg(exception.getMessage());
+        } catch (Exception e) {
+            result.setCode(ErrorCode.FAILED_CODE);
+            result.setMsg(e.getMessage());
+            LOGGER.error("PowerOffVmTask exception :", e);
+        }
+
+        return result;
+    }
+
+    /**
      * 不使用镜像创建虚拟机
      *
      * @param vmwareId the vmware id

@@ -4,12 +4,10 @@
 
 package cc.plugin.vmware.constant;
 
-import org.springframework.beans.factory.annotation.Value;
-
 /**
  * 功能描述
  *
- * @since 2019 -09-25
+ * @since 2019-09-25
  */
 public interface Constant {
     /**
@@ -85,4 +83,19 @@ public interface Constant {
      * The constant ID_REGEXP.
      */
     String ID_REGEXP = "^[0-9A-Za-z]{1,64}$";
+
+    /**
+     * The constant TASK.
+     */
+    String TASK = "Task";
+
+    /**
+     * The constant INFO.
+     */
+    String INFO = "info";
+
+    /**
+     * The constant VIRTUAL_MACHINE.
+     */
+    String VIRTUAL_MACHINE = "VirtualMachine";
 }

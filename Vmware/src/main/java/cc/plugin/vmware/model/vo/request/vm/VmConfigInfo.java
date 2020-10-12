@@ -393,4 +393,22 @@ public class VmConfigInfo {
         this.osFullName = osFullName;
     }
 
+    @Override
+    public String toString() {
+        return "VmConfigInfo{" +
+            "vmName='" + vmName + '\'' +
+            ", hostUrn='" + hostUrn + '\'' +
+            ", datacenterName='" + datacenterName + '\'' +
+            ", datastoreId='" + datastoreId + '\'' +
+            ", datastoreName='" + datastoreName + '\'' +
+            ", cpu=" + cpu +
+            ", memory=" + memory +
+            ", nics=" + nics +
+            ", disks=" + disks +
+            ", osType='" + osType + '\'' +
+            ", osVersion='" + osVersion + '\'' +
+            ", lunNames=" + lunNames +
+            ", osFullName='" + osFullName + '\'' +
+            '}';
+    }
 }

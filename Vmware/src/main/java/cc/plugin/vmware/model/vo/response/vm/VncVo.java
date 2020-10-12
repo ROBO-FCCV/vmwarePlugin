@@ -12,7 +12,6 @@ import io.swagger.annotations.ApiModelProperty;
  * @since 2019 -09-10
  */
 public class VncVo {
-
     @ApiModelProperty(value = "端口号", example = "0000", required = true)
     private String vncPort;
     @ApiModelProperty(value = "主机", example = "192.0.2.0", required = true)
@@ -25,6 +24,26 @@ public class VncVo {
     private String osType;
     @ApiModelProperty(value = "版本号", example = "1.1", required = true)
     private String version;
+    @ApiModelProperty(value = "票据", example = "1.1", required = true)
+    private String ticket;
+    @ApiModelProperty(value = "是否允许vnc登录", example = "true", required = true)
+    private boolean vncEnabled;
+
+    public boolean isVncEnabled() {
+        return vncEnabled;
+    }
+
+    public void setVncEnabled(boolean vncEnabled) {
+        this.vncEnabled = vncEnabled;
+    }
+
+    public String getTicket() {
+        return ticket;
+    }
+
+    public void setTicket(String ticket) {
+        this.ticket = ticket;
+    }
 
     /**
      * Gets vm name.

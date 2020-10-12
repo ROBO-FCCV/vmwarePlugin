@@ -153,7 +153,7 @@ public class SystemController {
         } catch (Exception e) {
             logger.error("Vmware validateVmwareInfo failed", e);
             result.setCode(ErrorCode.SYSTEM_ERROR_CODE);
-            result.setMsg(ErrorCode.SYSTEM_ERROR_MSG);
+            result.setMsg(ErrorCode.VMWARE_LOGIN_FAILED_ERROR_MSG);
             result.setData(new ValidationResponse().setValidationResult(false));
         }
         return result;

@@ -102,6 +102,7 @@ public abstract class AbstractVmOnlyService extends AbstractVmService {
 
     @Override
     public TaskVmVo createVmOnly(String vmwareId, VmConfigInfo vmConfigInfo) throws CustomException {
+        LOGGER.info("###create vm only params:{}",vmConfigInfo);
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ecb.connect();
         ServiceConnection serviceConnection = ecb.getConnection();

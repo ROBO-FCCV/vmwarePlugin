@@ -6,7 +6,11 @@
 
 <configuration status="INFO" monitorInterval="60">
     <Properties>
-        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%t] %p %l - %m%n</Property>
+        <Property name="PID">????</Property>
+        <Property name="LOG_EXCEPTION_CONVERSION_WORD">%xwEx</Property>
+        <Property name="LOG_LEVEL_PATTERN">%5p</Property>
+        <Property name="LOG_DATEFORMAT_PATTERN">yyyy-MM-dd HH:mm:ss.SSS</Property>
+        <Property name="pattern">%clr{%d{${LOG_DATEFORMAT_PATTERN}}}{faint} %clr{${LOG_LEVEL_PATTERN}} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}:%4.4line}{cyan} %clr{:}{faint} [%X{traceId}] %enc{%m}{CRLF}%n${sys:LOG_EXCEPTION_CONVERSION_WORD}</Property>
         <property name="log.path">/var/log/plugin/tomcat_https</property>
     </Properties>
     <Loggers>

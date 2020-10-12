@@ -23,31 +23,31 @@ import cc.plugin.vmware.model.vo.response.vm.Net;
 import cc.plugin.vmware.model.vo.response.vm.VMVo;
 import cc.plugin.vmware.service.DataCenterService;
 import cc.plugin.vmware.util.CommonUtil;
+
 import com.vmware.vim25.ComputeResourceSummary;
+import com.vmware.vim25.DatastoreSummary;
+import com.vmware.vim25.FileFaultFaultMsg;
+import com.vmware.vim25.GuestInfo;
+import com.vmware.vim25.GuestNicInfo;
 import com.vmware.vim25.HostHardwareInfo;
-import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.ServiceContent;
 import com.vmware.vim25.HostListSummary;
 import com.vmware.vim25.HostListSummaryQuickStats;
-import com.vmware.vim25.DatastoreSummary;
-import com.vmware.vim25.VirtualMachineConfigInfo;
-import com.vmware.vim25.VirtualMachineSummary;
-import com.vmware.vim25.VirtualMachineConfigSummary;
 import com.vmware.vim25.HostRuntimeInfo;
-import com.vmware.vim25.VirtualMachineRuntimeInfo;
-import com.vmware.vim25.GuestInfo;
-import com.vmware.vim25.VirtualMachineGuestSummary;
-import com.vmware.vim25.GuestNicInfo;
-import com.vmware.vim25.VirtualHardware;
-import com.vmware.vim25.OptionValue;
-import com.vmware.vim25.VimPortType;
-import com.vmware.vim25.FileFaultFaultMsg;
 import com.vmware.vim25.InvalidDatastoreFaultMsg;
+import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
+import com.vmware.vim25.ServiceContent;
+import com.vmware.vim25.VimPortType;
+import com.vmware.vim25.VirtualHardware;
+import com.vmware.vim25.VirtualMachineConfigInfo;
+import com.vmware.vim25.VirtualMachineGuestSummary;
+import com.vmware.vim25.VirtualMachineRuntimeInfo;
+import com.vmware.vim25.VirtualMachineSummary;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -62,12 +62,11 @@ import java.util.Locale;
 @Service
 public class DataCenterServiceImpl implements DataCenterService {
     private static final Logger logger = LoggerFactory.getLogger(DataCenterServiceImpl.class);
+    private ExtendedAppUtil extendedAppUtil;
 
-    /**
-     * The Extended app util.
-     */
-    @Autowired
-    ExtendedAppUtil extendedAppUtil;
+    public DataCenterServiceImpl(ExtendedAppUtil extendedAppUtil) {
+        this.extendedAppUtil = extendedAppUtil;
+    }
 
     @Override
     public VcenterEnvironment getVcenterBasicInfo(String vmwareId) throws CustomException {
@@ -148,8 +147,6 @@ public class DataCenterServiceImpl implements DataCenterService {
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ServiceConnection serviceConnection;
         ServiceUtil svc;
-        ManagedObjectReference rootFolder;
-        List<DataCenter> dataCenters = new ArrayList<>();
         ecb.connect();
         serviceConnection = ecb.getConnection();
         svc = ecb.getServiceUtil();
@@ -162,24 +159,23 @@ public class DataCenterServiceImpl implements DataCenterService {
             logger.error("The connection of Vmware {} is empty", vmwareId);
             throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
         }
-        rootFolder = content.getRootFolder();
+        ManagedObjectReference rootFolder = content.getRootFolder();
         List<ManagedObjectReference> datacenterList = svc.getDecendentMoRefs(rootFolder, "Datacenter");
-        ManagedObjectReference hostRef;
+        List<DataCenter> dataCenters = new ArrayList<>();
 
         // 获取数据中心
         for (ManagedObjectReference obj : datacenterList) {
             DataCenter dc = new DataCenter();
             String datacenterName = (String) svc.getDynamicProperty(obj, "name");
-            logger.info("map.. {}", datacenterName);
+            logger.info("Map.. {}", datacenterName);
             dc.setDataCenterName(datacenterName);
-            hostRef = (ManagedObjectReference) svc.getDynamicProperty(obj, "hostFolder");
-            List<ManagedObjectReference> clusterLst = svc.getDecendentMoRefs(hostRef, "ClusterComputeResource");
-            List<ClusterVO> clusterVOLst = new ArrayList<>();
+            ManagedObjectReference hostRef = (ManagedObjectReference) svc.getDynamicProperty(obj, "hostFolder");
             // 获取cluster下面主机信息
-            clusterHostsHandle(svc, clusterLst, clusterVOLst);
+            List<ClusterVO> clusterVOLst = clusterHostsHandle(svc, hostRef);
             dc.setClusterList(clusterVOLst);
-            // 设置主机
-            hostHandle(svc, hostRef, dc);
+            // 设置独立主机
+            List<Host> hosts = hostHandle(svc, hostRef);
+            dc.setExsiHostList(hosts);
             dataCenters.add(dc);
         }
         return dataCenters;
@@ -190,8 +186,6 @@ public class DataCenterServiceImpl implements DataCenterService {
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ServiceConnection serviceConnection;
         ServiceUtil svc;
-        ManagedObjectReference rootFolder;
-        List<ClusterAndHostTo> clusterAndHostTos = new ArrayList<>();
         ecb.connect();
         serviceConnection = ecb.getConnection();
         svc = ecb.getServiceUtil();
@@ -204,100 +198,85 @@ public class DataCenterServiceImpl implements DataCenterService {
             logger.error(String.format(Locale.ENGLISH, "The connection of Vmware %s is empty", vmwareId));
             throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
         }
-        rootFolder = content.getRootFolder();
+        ManagedObjectReference rootFolder = content.getRootFolder();
         List<ManagedObjectReference> datacenterList = svc.getDecendentMoRefs(rootFolder, "Datacenter");
-        ManagedObjectReference hostRef;
-
+        List<ClusterAndHostTo> clusterAndHostTos = new ArrayList<>();
         // 获取数据中心
         for (ManagedObjectReference obj : datacenterList) {
             ClusterAndHostTo clusterAndHostTo = new ClusterAndHostTo();
             String datacenterName = (String) svc.getDynamicProperty(obj, "name");
-            logger.info("map.. {}" ,datacenterName);
+            logger.info("Map.. {}", datacenterName);
             clusterAndHostTo.setDatacenterName(datacenterName);
-            hostRef = (ManagedObjectReference) svc.getDynamicProperty(obj, "hostFolder");
-            List<ManagedObjectReference> clusterLst = svc.getDecendentMoRefs(hostRef, "ClusterComputeResource");
-            List<ClusterTo> clusterTos = new ArrayList<>();
+            ManagedObjectReference hostRef = (ManagedObjectReference) svc.getDynamicProperty(obj, "hostFolder");
             // 获取cluster下面主机信息
-            queryClusters(svc, clusterLst, clusterTos);
+            List<ClusterTo> clusterTos = queryClusters(svc, hostRef);
             clusterAndHostTo.setClusters(clusterTos);
-            // 设置主机
-            queryStandaloneHosts(svc, hostRef, clusterAndHostTo);
+            // 获取独立主机
+            List<HostTo> hostTos = queryStandaloneHosts(svc, hostRef);
+            clusterAndHostTo.setHosts(hostTos);
             clusterAndHostTos.add(clusterAndHostTo);
         }
         return clusterAndHostTos;
     }
 
-    private void queryStandaloneHosts(ServiceUtil svc, ManagedObjectReference hostRef,
-        ClusterAndHostTo clusterAndHostTo) {
-        List<ManagedObjectReference> list = (List<ManagedObjectReference>) svc.getDynamicProperty(hostRef,
-            "childEntity");
+    private List<HostTo> queryStandaloneHosts(ServiceUtil svc, ManagedObjectReference hostRef) {
         List<HostTo> hostTos = new ArrayList<>();
-        for (ManagedObjectReference host : list) {
-            logger.info("host.getType() : {}" ,host.getType());
-            if ("ClusterComputeResource".equals(host.getType())) {
-                continue;
+        List<ManagedObjectReference> computeResources = svc.getDecendentMoRefs(hostRef, "ComputeResource");
+        if (CollectionUtils.isNotEmpty(computeResources)) {
+            for (ManagedObjectReference computeResource : computeResources) {
+                logger.info("Host.getType() : {}", computeResource.getType());
+                if ("ComputeResource".equals(computeResource.getType())) { // 独立主机
+                    HostTo hostTo = queryHost(svc, computeResource);
+                    hostTos.add(hostTo);
+                } else { // 其他主机不处理
+                    logger.info("Other hosts do not need to process.");
+                }
             }
-            // 文件夹
-            else if (host.getType().equals("Folder")) {
-                getFolders(svc, clusterAndHostTo, hostTos, host);
-            }
-            // 直接主机
-            else {
-                getStandaloneHosts(svc, clusterAndHostTo, hostTos, host);
-            }
-
         }
+        return hostTos;
     }
 
-    private void hostHandle(ServiceUtil svc, ManagedObjectReference hostRef, DataCenter dc) {
-        List<ManagedObjectReference> list = (List<ManagedObjectReference>) svc.getDynamicProperty(hostRef,
-            "childEntity");
-        List<Host> hostLst = new ArrayList<Host>();
-
-        for (ManagedObjectReference host : list) {
-            logger.info("host.getType() : {}", host.getType());
-            if ("ClusterComputeResource".equals(host.getType())) {
-                continue;
+    private List<Host> hostHandle(ServiceUtil svc, ManagedObjectReference hostRef) {
+        List<ManagedObjectReference> list = svc.getDecendentMoRefs(hostRef, "ComputeResource");
+        List<Host> hostLst = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(list)) {
+            for (ManagedObjectReference host : list) {
+                logger.info("Host.getType() : {}", host.getType());
+                if ("ComputeResource".equals(host.getType())) {
+                    Host host1 = hostsHandle(svc, host);
+                    hostLst.add(host1);
+                } else {
+                    logger.info("Other hosts do not need to process.");
+                }
             }
-            // 文件夹
-            else if (host.getType().equals("Folder")) {
-                folderHandle(svc, dc, hostLst, host);
-            }
-            // 直接主机
-            else {
-                hostsHandle(svc, dc, hostLst, host);
-            }
-
         }
+        return hostLst;
     }
 
-    private void hostsHandle(ServiceUtil svc, DataCenter dc, List<Host> hostLst, ManagedObjectReference host) {
+    private Host hostsHandle(ServiceUtil svc, ManagedObjectReference host) {
+        Host hostRes = new Host();
         List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host, "host");
-
         String hostName = (String) svc.getDynamicProperty(host, "name");
         for (ManagedObjectReference htTmp : hostlist) {
             HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
-            Host ht = new Host();
-            List<Datastore> datastoreLst = new ArrayList<Datastore>();
-            setClusterHostDatastore(svc, datastoreLst, htTmp, ht);
+            List<Datastore> datastoreLst = new ArrayList<>();
+            setClusterHostDatastore(svc, datastoreLst, htTmp, hostRes);
             HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
-            ht.setEsxStatus(hostRuntimeInfo.getConnectionState().toString());
-            ht.setName(hostName);
-            ht.setIp(hostName);
-            ht.setMoId(htTmp.getValue());
+            hostRes.setEsxStatus(hostRuntimeInfo.getConnectionState().toString());
+            hostRes.setName(hostName);
+            hostRes.setIp(hostName);
+            hostRes.setMoId(htTmp.getValue());
             List<ManagedObjectReference> vmLst = (List<ManagedObjectReference>) svc.getDynamicProperty(htTmp, "vm");
-            List<VMVo> vmLsts = new ArrayList<VMVo>();
+            List<VMVo> vmLsts = new ArrayList<>();
             setHostsVms(svc, htTmp, vmLst, vmLsts);
-            ht.setVmList(vmLsts);
-            hostLst.add(ht);
+            hostRes.setVmList(vmLsts);
         }
-        dc.setExsiHostList(hostLst);
+        return hostRes;
     }
 
     private void setHostsVms(ServiceUtil svc, ManagedObjectReference htTmp, List<ManagedObjectReference> vmLst,
         List<VMVo> vmLsts) {
         for (ManagedObjectReference vm : vmLst) {
-
             Object vmConfigInfo = CommonUtil.getVmConfigInfo(svc, vm);
             VirtualMachineConfigInfo config;
             if (vmConfigInfo == null) {
@@ -306,16 +285,15 @@ public class DataCenterServiceImpl implements DataCenterService {
                 try {
                     config = (VirtualMachineConfigInfo) vmConfigInfo;
                 } catch (ClassCastException e) {
-                    logger.warn("getVmConfigInfo ClassCastException vm", e);
+                    logger.warn("GetVmConfigInfo ClassCastException vm", e);
                     continue;
                 }
             }
             // 过滤掉模板
-            if (config != null && config.isTemplate()) {
+            if (config.isTemplate()) {
                 continue;
             }
             VirtualMachineSummary vmSummary = (VirtualMachineSummary) svc.getDynamicProperty(vm, "summary");
-            VirtualMachineConfigSummary vmSumconfig = vmSummary.getConfig();
             VirtualMachineRuntimeInfo getRunTime = vmSummary.getRuntime();
             VirtualMachineGuestSummary vmGuest = vmSummary.getGuest();
             VirtualMachineConfigInfo vmconfig = (VirtualMachineConfigInfo) svc.getDynamicProperty(vm, "config");
@@ -352,128 +330,20 @@ public class DataCenterServiceImpl implements DataCenterService {
         }
     }
 
-    private void folderHandle(ServiceUtil svc, DataCenter dc, List<Host> hostLst, ManagedObjectReference host) {
-        List<ManagedObjectReference> hostTempList = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
-            "childEntity");
-
-        for (ManagedObjectReference tmpHost : hostTempList) {
-            String hostName = (String) svc.getDynamicProperty(tmpHost, "name");
-            logger.info("hostName..{}", hostName);
-            List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(tmpHost,
-                "host");
-
-            for (ManagedObjectReference htTmp : hostlist) {
-                Host ht = new Host();
-                List<ManagedObjectReference> vmLst = (List<ManagedObjectReference>) svc.getDynamicProperty(htTmp, "vm");
-                List<VMVo> vmLsts = new ArrayList<VMVo>();
-                setFolderVmList(svc, htTmp, vmLst, vmLsts);
-                ht.setVmList(vmLsts);
-                List<Datastore> datastoreLst = new ArrayList<Datastore>();
-                setClusterHostDatastore(svc, datastoreLst, htTmp, ht);
-                HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
-                HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
-                ht.setEsxStatus(hostRuntimeInfo.getConnectionState().toString());
-                ht.setName(hostName);
-                ht.setIp(hostName);
-                ht.setMoId(htTmp.getValue());
-                hostLst.add(ht);
-            }
-        }
-        dc.setExsiHostList(hostLst);
-    }
-
-    private void setFolderVmList(ServiceUtil svc, ManagedObjectReference htTmp, List<ManagedObjectReference> vmLst,
-        List<VMVo> vmLsts) {
-        for (ManagedObjectReference vm : vmLst) {
-
-            Object vmConfigInfo = CommonUtil.getVmConfigInfo(svc, vm);
-            VirtualMachineConfigInfo config;
-            if (vmConfigInfo == null) {
-                continue;
-            } else {
-                config = (VirtualMachineConfigInfo) vmConfigInfo;
-            }
-            // 过滤掉模板
-            if (config != null && config.isTemplate()) {
-                continue;
-            }
-            VirtualMachineSummary vmSummary = (VirtualMachineSummary) svc.getDynamicProperty(vm, "summary");
-            VirtualMachineRuntimeInfo getRunTime = vmSummary.getRuntime();
-            VirtualMachineGuestSummary vmGuest = vmSummary.getGuest();
-            VirtualMachineConfigInfo vmconfig = (VirtualMachineConfigInfo) svc.getDynamicProperty(vm, "config");
-            VirtualHardware virtualHardware = vmconfig.getHardware();
-            VMVo vmVo = new VMVo();
-            vmVo.setHostId(htTmp.getValue());
-            vmVo.setModId(vm.getValue());
-            vmVo.setVmId(vm.getValue());
-            String vmName = (String) svc.getDynamicProperty(vm, "name");
-            vmVo.setVmName(vmName);
-            vmVo.setStatus("");
-            vmVo.setMemory(virtualHardware.getMemoryMB() / 1024);
-            vmVo.setVcpu(virtualHardware.getNumCPU());
-            vmVo.setPowerStatus(getRunTime.getPowerState().toString());
-            vmVo.setIpAddess(vmGuest.getIpAddress());
-            vmVo.setOsName(getOSNameByFullName(config.getGuestFullName()));
-            // novnc enabled
-            try {
-                getVncableAndosType(svc, vm, vmVo);
-            } catch (ClassCastException e) {
-                logger.warn("getVncableAndosType ClassCastException: ", e);
-                continue;
-            }
-            // 查询网卡
-            GuestInfo guestInfo = (GuestInfo) svc.getDynamicProperty(vm, "guest");
-            List<GuestNicInfo> nets = guestInfo.getNet();
-            List<Net> nics = new ArrayList<>();
-            for (GuestNicInfo net : nets) {
-                nics.add(new Net().setName(net.getNetwork()).setIp(net.getIpAddress()));
-            }
-            vmVo.setNets(nics);
-            vmLsts.add(vmVo);
-        }
-    }
-
-    private void getFolders(ServiceUtil svc, ClusterAndHostTo clusterAndHostTo, List<HostTo> hostLst,
-        ManagedObjectReference host) {
-        List<ManagedObjectReference> hostTempList = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
-            "childEntity");
-        for (ManagedObjectReference tmpHost : hostTempList) {
-            String hostName = (String) svc.getDynamicProperty(tmpHost, "name");
-            logger.info("hostName..{}" ,hostName);
-            List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(tmpHost,
-                "host");
-            for (ManagedObjectReference htTmp : hostlist) {
-                HostTo hostTo = new HostTo();
-                HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
-                HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
-                hostTo.setStatus(hostRuntimeInfo.getConnectionState().toString());
-                hostTo.setName(hostName);
-                hostTo.setIpAddress(hostName);
-                hostTo.setMoId(htTmp.getValue());
-                hostTo.setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
-                hostLst.add(hostTo);
-            }
-        }
-        clusterAndHostTo.setHosts(hostLst);
-    }
-
-    private void getStandaloneHosts(ServiceUtil svc, ClusterAndHostTo clusterAndHostTo, List<HostTo> hostLst,
-        ManagedObjectReference host) {
-        List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host, "host");
-
+    private HostTo queryHost(ServiceUtil svc, ManagedObjectReference host) {
+        HostTo hostTo = new HostTo();
         String hostName = (String) svc.getDynamicProperty(host, "name");
-        for (ManagedObjectReference htTmp : hostlist) {
-            HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
-            HostTo ht = new HostTo();
-            HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
-            ht.setStatus(hostRuntimeInfo.getConnectionState().toString());
-            ht.setName(hostName);
-            ht.setIpAddress(hostName);
-            ht.setMoId(htTmp.getValue());
-            ht.setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
-            hostLst.add(ht);
+        List<ManagedObjectReference> hostList = (List<ManagedObjectReference>) svc.getDynamicProperty(host, "host");
+        if (CollectionUtils.isNotEmpty(hostList)) {
+            ManagedObjectReference managedObjectReference = hostList.get(0);
+            HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(managedObjectReference,
+                "summary");
+            hostTo.setStatus(hostSystemInfo.getRuntime().getConnectionState().toString());
+            hostTo.setMoId(managedObjectReference.getValue());
         }
-        clusterAndHostTo.setHosts(hostLst);
+        hostTo.setName(hostName);
+        hostTo.setIpAddress(hostName);
+        return hostTo;
     }
 
     private void setClusterHostDatastore(ServiceUtil svc, List<Datastore> htTmpDatastoreLst,
@@ -497,12 +367,13 @@ public class DataCenterServiceImpl implements DataCenterService {
         ht.setDatastoreLst(htTmpDatastoreLst);
     }
 
-    private void clusterHostsHandle(ServiceUtil svc, List<ManagedObjectReference> clusterLst,
-        List<ClusterVO> clusterVOLst) {
+    private List<ClusterVO> clusterHostsHandle(ServiceUtil svc, ManagedObjectReference hostRef) {
+        List<ClusterVO> clusterVOLst = new ArrayList<>();
+        List<ManagedObjectReference> clusterLst = svc.getDecendentMoRefs(hostRef, "ClusterComputeResource");
         if (clusterLst != null) {
             for (ManagedObjectReference clusterVo : clusterLst) {
                 ClusterVO clusterVO = new ClusterVO();
-                List<Datastore> datastoreLst = new ArrayList<Datastore>();
+                List<Datastore> datastoreLst = new ArrayList<>();
                 List<ManagedObjectReference> clusterdatastoreLst
                     = (List<ManagedObjectReference>) svc.getDynamicProperty(clusterVo, "datastore");
                 for (ManagedObjectReference clusterdatastore : clusterdatastoreLst) {
@@ -524,7 +395,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                 clusterVO.setDatastoreLst(datastoreLst);
                 List<ManagedObjectReference> hostList = (List<ManagedObjectReference>) svc.getDynamicProperty(clusterVo,
                     "host");
-                List<Host> hostlists = new ArrayList<Host>();
+                List<Host> hostlists = new ArrayList<>();
 
                 for (ManagedObjectReference htTmp : hostList) {
                     String hostName = (String) svc.getDynamicProperty(htTmp, "name");
@@ -532,7 +403,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                     Host ht = new Host();
                     List<ManagedObjectReference> vmLst = (List<ManagedObjectReference>) svc.getDynamicProperty(htTmp,
                         "vm");
-                    List<VMVo> vmLsts = new ArrayList<VMVo>();
+                    List<VMVo> vmLsts = new ArrayList<>();
                     setVmList(svc, clusterVo, htTmp, vmLst, vmLsts);
                     ht.setVmList(vmLsts);
                     HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
@@ -540,7 +411,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                     ht.setName(hostName);
                     ht.setIp(hostName);
                     ht.setMoId(htTmp.getValue());
-                    List<Datastore> htTmpDatastoreLst = new ArrayList<Datastore>();
+                    List<Datastore> htTmpDatastoreLst = new ArrayList<>();
                     setClusterHostDatastore(svc, htTmpDatastoreLst, htTmp, ht);
                     hostlists.add(ht);
                 }
@@ -551,6 +422,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                 clusterVOLst.add(clusterVO);
             }
         }
+        return clusterVOLst;
     }
 
     private void setVmList(ServiceUtil svc, ManagedObjectReference clusterVo, ManagedObjectReference htTmp,
@@ -584,7 +456,7 @@ public class DataCenterServiceImpl implements DataCenterService {
             try {
                 getVncableAndosType(svc, vm, vmVo);
             } catch (ClassCastException e) {
-                logger.warn("getVncableAndosType ClassCastException: ", e);
+                logger.warn("GetVncableAndosType ClassCastException: ", e);
                 continue;
             }
             // 查询网卡
@@ -601,7 +473,9 @@ public class DataCenterServiceImpl implements DataCenterService {
         }
     }
 
-    private void queryClusters(ServiceUtil svc, List<ManagedObjectReference> clusterLst, List<ClusterTo> clusterTos) {
+    private List<ClusterTo> queryClusters(ServiceUtil svc, ManagedObjectReference hostRef) {
+        List<ClusterTo> clusterTos = new ArrayList<>();
+        List<ManagedObjectReference> clusterLst = svc.getDecendentMoRefs(hostRef, "ClusterComputeResource");
         if (clusterLst != null) {
             for (ManagedObjectReference clusterVo : clusterLst) {
                 ClusterTo clusterTo = new ClusterTo();
@@ -613,12 +487,10 @@ public class DataCenterServiceImpl implements DataCenterService {
                     HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
                     HostTo ht = new HostTo();
                     HostRuntimeInfo hostRuntimeInfo = hostSystemInfo.getRuntime();
-                    ht
-                        .setStatus(hostRuntimeInfo.getConnectionState().toString())
+                    ht.setStatus(hostRuntimeInfo.getConnectionState().toString())
                         .setName(hostName)
                         .setIpAddress(hostName)
-                        .setMoId(htTmp.getValue())
-                        .setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
+                        .setMoId(htTmp.getValue());
                     hosts.add(ht);
                 }
                 clusterTo.setMoId(clusterVo.getValue());
@@ -628,6 +500,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                 clusterTos.add(clusterTo);
             }
         }
+        return clusterTos;
     }
 
     private void getVncableAndosType(ServiceUtil svc, ManagedObjectReference vm, VMVo vmVo) {
@@ -669,7 +542,7 @@ public class DataCenterServiceImpl implements DataCenterService {
     @SuppressWarnings("unchecked")
     public List<DataCenter> getDataCenterBasicInfo(String vmwareId, boolean isActiveHost)
         throws CustomException, FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
-        logger.info("getIsoInfo begin...");
+        logger.info("GetIsoInfo begin...");
         ExtendedAppUtil ecb = extendedAppUtil.getExtendedAppUtil(vmwareId);
         ServiceConnection serviceConnection;
         ServiceUtil svc;
@@ -697,7 +570,7 @@ public class DataCenterServiceImpl implements DataCenterService {
         for (ManagedObjectReference obj : datacenterList) {
             DataCenter dc = new DataCenter();
             String datacenterName = (String) svc.getDynamicProperty(obj, "name");
-            logger.info("map..{}", datacenterName);
+            logger.info("Map..{}", datacenterName);
             dc.setDataCenterName(datacenterName);
             hostRef = (ManagedObjectReference) svc.getDynamicProperty(obj, "hostFolder");
             List<ManagedObjectReference> list = (List<ManagedObjectReference>) svc.getDynamicProperty(hostRef,
@@ -705,7 +578,7 @@ public class DataCenterServiceImpl implements DataCenterService {
             hostList = getHostList(list);
             List<Host> exsiHostList = new ArrayList<>();
             // 获取主机列表
-            iteratorHost(service, hostList, svc, exsiHostList, isActiveHost);
+            iteratorHost(hostList, svc, exsiHostList, isActiveHost);
             dc.setExsiHostList(exsiHostList);
             dataCenters.add(dc);
         }
@@ -722,17 +595,15 @@ public class DataCenterServiceImpl implements DataCenterService {
         return hostList;
     }
 
-    private void iteratorHost(VimPortType service, ManagedObjectReference[] hostList, ServiceUtil svc,
-        List<Host> exsiHostList, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void iteratorHost(ManagedObjectReference[] hostList, ServiceUtil svc, List<Host> exsiHostList,
+        Boolean isActiveHost) {
         for (ManagedObjectReference host : hostList) {
-            getClusterComputerR(service, svc, exsiHostList, host, isActiveHost);
+            getClusterComputerR(svc, exsiHostList, host, isActiveHost);
         }
     }
 
-    private void getClusterComputerR(VimPortType service, ServiceUtil svc, List<Host> exsiHostList,
-        ManagedObjectReference host, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void getClusterComputerR(ServiceUtil svc, List<Host> exsiHostList, ManagedObjectReference host,
+        Boolean isActiveHost) {
         if ("ClusterComputeResource".equals(host.getType())) {
             List<ManagedObjectReference> hostTempList = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
                 "host");
@@ -740,7 +611,7 @@ public class DataCenterServiceImpl implements DataCenterService {
                 return;
             }
 
-            getClusterComputeResource(service, svc, host, exsiHostList, hostTempList, isActiveHost);
+            getClusterComputeResource(svc, host, exsiHostList, hostTempList, isActiveHost);
 
         } else if (host.getType().equals("Folder")) {
             List<ManagedObjectReference> hostTempList = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
@@ -748,35 +619,32 @@ public class DataCenterServiceImpl implements DataCenterService {
             if (hostTempList == null) {
                 return;
             }
-            getClusterComputeResource(service, svc, host, exsiHostList, hostTempList, isActiveHost);
+            getClusterComputeResource(svc, host, exsiHostList, hostTempList, isActiveHost);
         } else {
-            List<ManagedObjectReference> hostTempList = new ArrayList<ManagedObjectReference>();
-            getClusterComputeResource(service, svc, host, exsiHostList, hostTempList, isActiveHost);
+            List<ManagedObjectReference> hostTempList = new ArrayList<>();
+            getClusterComputeResource(svc, host, exsiHostList, hostTempList, isActiveHost);
         }
     }
 
-    private void getClusterComputeResource(VimPortType service, ServiceUtil svc, ManagedObjectReference host,
-        List<Host> exsiHostList, List<ManagedObjectReference> hostTempList, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void getClusterComputeResource(ServiceUtil svc, ManagedObjectReference host, List<Host> exsiHostList,
+        List<ManagedObjectReference> hostTempList, Boolean isActiveHost) {
         Host ht = new Host();
         if ("ClusterComputeResource".equals(host.getType())) {
-            setDataStor(service, svc, host, exsiHostList, hostTempList, isActiveHost);
+            setDataStor(svc, host, exsiHostList, hostTempList, isActiveHost);
         } else if (host.getType().equals("Folder")) {
-            ManagedObjectReference[] datastoreList = setFolderDataStore(service, svc, exsiHostList, hostTempList,
-                isActiveHost);
-            logger.info("datastoreList....{}", datastoreList);
+            ManagedObjectReference[] datastoreList = setFolderDataStore(svc, exsiHostList, hostTempList, isActiveHost);
+            logger.info("DatastoreList....{}", datastoreList);
         } else {
-            setNomalDataStore(service, svc, host, exsiHostList, ht, isActiveHost);
+            setNomalDataStore(svc, host, exsiHostList, ht, isActiveHost);
         }
     }
 
-    private void setNomalDataStore(VimPortType service, ServiceUtil svc, ManagedObjectReference host,
-        List<Host> exsiHostList, Host ht, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void setNomalDataStore(ServiceUtil svc, ManagedObjectReference host, List<Host> exsiHostList, Host ht,
+        Boolean isActiveHost) {
         ManagedObjectReference[] datastoreList = null;
         String hostName = (String) svc.getDynamicProperty(host, "name");
         List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host, "host");
-        List<Host> hostlists = new ArrayList<Host>();
+        List<Host> hostlists = new ArrayList<>();
         for (ManagedObjectReference htTmp : hostlist) {
             HostListSummary hostSystemInfo = (HostListSummary) svc.getDynamicProperty(htTmp, "summary");
 
@@ -796,21 +664,19 @@ public class DataCenterServiceImpl implements DataCenterService {
         if (talist != null) {
             datastoreList = talist.toArray(new ManagedObjectReference[] {});
         }
-        hostSetDataStor(service, datastoreList, hostlists, svc, exsiHostList);
+        hostSetDataStor(datastoreList, hostlists, exsiHostList);
     }
 
-    private void setDataStor(VimPortType service, ServiceUtil svc, ManagedObjectReference host, List<Host> exsiHostList,
-        List<ManagedObjectReference> hostTempList, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void setDataStor(ServiceUtil svc, ManagedObjectReference host, List<Host> exsiHostList,
+        List<ManagedObjectReference> hostTempList, Boolean isActiveHost) {
         ManagedObjectReference[] datastoreList;
-        Host ht;
         List<ManagedObjectReference> managedlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
             "datastore");
         datastoreList = managedlist.toArray(new ManagedObjectReference[] {});
         List<Host> hostlists = new ArrayList<Host>();
 
         setHostList(svc, host, hostTempList, isActiveHost, hostlists);
-        hostSetDataStor(service, datastoreList, hostlists, svc, exsiHostList);
+        hostSetDataStor(datastoreList, hostlists, exsiHostList);
     }
 
     private void setHostList(ServiceUtil svc, ManagedObjectReference host, List<ManagedObjectReference> hostTempList,
@@ -819,9 +685,8 @@ public class DataCenterServiceImpl implements DataCenterService {
         for (ManagedObjectReference tmpHost : hostTempList) {
             ht = new Host();
             String hostName = (String) svc.getDynamicProperty(tmpHost, "name");
-            logger.info("hostName..{}", hostName);
-            List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host,
-                "host");
+            logger.info("HostName..{}", hostName);
+            List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(host, "host");
             getHostList(svc, isActiveHost, hostlists, ht, tmpHost, hostName, hostlist);
         }
     }
@@ -845,27 +710,24 @@ public class DataCenterServiceImpl implements DataCenterService {
         }
     }
 
-    private void hostSetDataStor(VimPortType service, ManagedObjectReference[] datastoreList, List<Host> htLst,
-        ServiceUtil svc, List<Host> exsiHostList)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private void hostSetDataStor(ManagedObjectReference[] datastoreList, List<Host> htLst, List<Host> exsiHostList) {
         for (Host ht : htLst) {
             if (datastoreList != null) {
-                List<IsoEnty> dataStoreList = new ArrayList<IsoEnty>();
+                List<IsoEnty> dataStoreList = new ArrayList<>();
                 ht.setDataStoreList(dataStoreList);
             }
             exsiHostList.add(ht);
         }
     }
 
-    private ManagedObjectReference[] setFolderDataStore(VimPortType service, ServiceUtil svc, List<Host> exsiHostList,
-        List<ManagedObjectReference> hostTempList, Boolean isActiveHost)
-        throws FileFaultFaultMsg, InvalidDatastoreFaultMsg, RuntimeFaultFaultMsg {
+    private ManagedObjectReference[] setFolderDataStore(ServiceUtil svc, List<Host> exsiHostList,
+        List<ManagedObjectReference> hostTempList, Boolean isActiveHost) {
         Host ht;
         ManagedObjectReference[] datastoreList = null;
         List<Host> hostLst = new ArrayList<Host>();
         for (ManagedObjectReference tmpHost : hostTempList) {
             String hostName = (String) svc.getDynamicProperty(tmpHost, "name");
-            logger.info("hostName..{}", hostName);
+            logger.info("HostName..{}", hostName);
             List<ManagedObjectReference> hostlist = (List<ManagedObjectReference>) svc.getDynamicProperty(tmpHost,
                 "host");
 
@@ -889,15 +751,15 @@ public class DataCenterServiceImpl implements DataCenterService {
                 datastoreList = datalist.toArray(new ManagedObjectReference[] {});
             }
         }
-        hostSetDataStor(service, datastoreList, hostLst, svc, exsiHostList);
+        hostSetDataStor(datastoreList, hostLst, exsiHostList);
         return datastoreList;
     }
 
     private boolean filterActiveHost(Boolean isActiveHost, HostRuntimeInfo hostRuntimeInfo) {
-        logger.info("filterActiveHost begin...");
+        logger.info("FilterActiveHost begin...");
         if (isActiveHost) {
             if (!"CONNECTED".equalsIgnoreCase(hostRuntimeInfo.getConnectionState().toString())) {
-                logger.info("this host is unnormal...");
+                logger.info("This host is abnormal...");
                 return true;
             }
         }

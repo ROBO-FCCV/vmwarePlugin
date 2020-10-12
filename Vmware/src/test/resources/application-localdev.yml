@@ -12,7 +12,8 @@
 
 ipBlacklist:
   ipList: 127.0.0.1,0.0.0.0
-
+security:
+  enabled: false
 endpoints:
   metrics:
     enabled: false

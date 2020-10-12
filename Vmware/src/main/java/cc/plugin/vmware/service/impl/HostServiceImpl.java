@@ -390,7 +390,8 @@ public class HostServiceImpl implements HostService {
             .setStatus(hostRuntimeInfo.getConnectionState().toString())
             .setName(hostName)
             .setIpAddress(hostName)
-            .setMoId(hostMO.getValue());
+            .setMoId(hostMO.getValue())
+            .setInMaintenanceMode(hostRuntimeInfo.isInMaintenanceMode());
         return ht;
     }
 

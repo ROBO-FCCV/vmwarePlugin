@@ -20,7 +20,7 @@ public class HostTo {
     private String moId;
     @ApiModelProperty(value = "主机状态", example = "Normal", required = true)
     private String status;
-    @ApiModelProperty(value = "是否在维护模式", example = "true", required = true)
+    @ApiModelProperty(value = "是否为维护模式", example = "true", required = true)
     private boolean inMaintenanceMode;
 
     /**
@@ -104,17 +104,19 @@ public class HostTo {
     }
 
     /**
-     * is inMaintenanceMode
-     * @return the inMaintenanceMode
+     * Is in maintenance mode boolean.
+     *
+     * @return the boolean
      */
     public boolean isInMaintenanceMode() {
         return inMaintenanceMode;
     }
 
     /**
-     * set inMaintenanceMode
-     * @param inMaintenanceMode
-     * @return the inMaintenanceMode
+     * Sets in maintenance mode.
+     *
+     * @param inMaintenanceMode the in maintenance mode
+     * @return the in maintenance mode
      */
     public HostTo setInMaintenanceMode(boolean inMaintenanceMode) {
         this.inMaintenanceMode = inMaintenanceMode;

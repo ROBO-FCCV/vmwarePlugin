@@ -4,9 +4,6 @@
 
 package cc.plugin.vmware.util;
 
-import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.VirtualMachineConfigInfo;
-
 import cc.plugin.vmware.connection.ExtendedAppUtil;
 import cc.plugin.vmware.connection.ServiceUtil;
 import cc.plugin.vmware.constant.Constant;
@@ -15,8 +12,12 @@ import cc.plugin.vmware.exception.CustomException;
 import cc.plugin.vmware.model.vo.request.VmwareInfo;
 import cc.plugin.vmware.model.vo.response.ValidationResponse;
 
+import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.VirtualMachineConfigInfo;
+
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -43,6 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -56,8 +58,8 @@ import java.util.regex.PatternSyntaxException;
 public class CommonUtil {
     private static final Logger logger = LoggerFactory.getLogger(CommonUtil.class);
 
-    private static final String IPV4
-        = "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$";
+    private static final String IPV4 = "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$";
+
     private static Pattern IPV4_PATTERN = null;
 
     /**
@@ -70,7 +72,7 @@ public class CommonUtil {
         try {
             IPV4_PATTERN = Pattern.compile(IPV4, Pattern.CASE_INSENSITIVE);
         } catch (PatternSyntaxException e) {
-            logger.error("ip pattern address exception: ", e);
+            logger.error("Ip pattern address exception: ", e);
         }
     }
 
@@ -100,7 +102,7 @@ public class CommonUtil {
             String[] strArr = strD.split("\\.");
             return Double.parseDouble(strArr[0]) / 10;
         } catch (Exception e) {
-            logger.error("oneAfterPoint error.", e);
+            logger.error("OneAfterPoint error.", e);
             return 0;
         }
     }
@@ -114,11 +116,11 @@ public class CommonUtil {
     public static String filterSymbol(String str) {
         Pattern pattern = Pattern.compile("[A-Za-z0-9]+");
         Matcher matcher = pattern.matcher(str);
-        StringBuilder result = new StringBuilder().append("vmNew");
+        StringBuilder result = new StringBuilder().append("vm-new");
         while (matcher.find()) {
             result.append(matcher.group());
         }
-        return StringUtils.substring(result.toString(), 0, 15);
+        return result.toString();
     }
 
     /**
@@ -131,64 +133,41 @@ public class CommonUtil {
     }
 
     /**
-     * Validate vmware info validation response.
-     *
-     * @param vmwareInfo the vmware info
-     * @return the validation response
-     * @throws CustomException the custom exception
-     */
-    public ValidationResponse validateVmwareInfo(VmwareInfo vmwareInfo) throws CustomException {
-        String vmwareId;
-        String ip = vmwareInfo.getIp();
-        String username = vmwareInfo.getUsername();
-        String password = vmwareInfo.getPassword();
-        if (StringUtils.isEmpty(ip) || StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
-            throw new CustomException(ErrorCode.VMWARE_YML_EMPTY_CODE, ErrorCode.VMWARE_YML_EMPTY_MSG);
-        }
-        // ping IP
-        if (!ipCanBeConnectedDiffIpVersion(ip, Constant.IPV4)) {
-            logger.error("The IP {} is unreachable", ip);
-            throw new CustomException(ErrorCode.FAILED_CODE, ErrorCode.IP_UNREACHABLE_ERROR_MSG);
-        }
-        try {
-            extendedAppUtil.getConnection().checkVmwareConnection("https://" + ip + "/sdk", username, password);
-        } catch (Exception e) {
-            logger.error("", e);
-            throw new CustomException(ErrorCode.FAILED_CODE, ErrorCode.VMWARE_LOGIN_FAILED_ERROR_MSG);
-        }
-        vmwareId = generateUuid();
-        return new ValidationResponse().setValidationResult(true).setVmwareId(vmwareId);
-    }
-
-    /**
      * Ip can be connected diff ip version boolean.
      *
      * @param ipAddress the ip address
      * @param ipVersion the ip version
      * @return the boolean
+     * @throws CustomException 自定义异常
      */
-    public static boolean ipCanBeConnectedDiffIpVersion(String ipAddress, String ipVersion) {
+    public static boolean ipCanBeConnectedDiffIpVersion(String ipAddress, String ipVersion) throws CustomException {
         // 校验IP
-        logger.info("Start match ip..., ip : {}", ipAddress);
         Pattern pattern = Pattern.compile(Constant.IP_RULE);
         Matcher matcher = pattern.matcher(ipAddress);
         if (!matcher.matches()) {
             logger.info("IpCheckUtil.ipCanBeConnected ip is error. ip : {}", ipAddress);
             return false;
         }
-        logger.info("Match ip complete... {}", ipAddress);
-
+        logger.info("Match ip complete.");
         // 校验ipVersion
-        logger.info("Start verify ipVersion ... , ip : {}", ipAddress);
         if (verSionNotValid(ipVersion)) {
-            logger.error("ipVersion value " + ipVersion + " invalid");
+            logger.error("ipVersion value {} invalid", ipVersion);
             return false;
         }
-        logger.info("End verify ipVersion ... , ip : {}", ipAddress);
+        logger.info("End verify ipVersion ... ");
         // 默认linux的ping命令
-        String pingCommand = "ping " + ipAddress + " -c " + Constant.SINGLE_PING_IP_TIMES + " -W "
-            + Constant.SINGLE_PING_IP_LINUX_TIME_OUT;
-        logger.info("pingCommand : {}", pingCommand);
+        String pingCommand = isIpv4Address(ipAddress) ? "ping" : "ping6";
+        if (SystemUtils.IS_OS_WINDOWS) {
+            pingCommand += " " + ipAddress + " -n " + Constant.SINGLE_PING_IP_TIMES + " -w "
+                + Constant.SINGLE_PING_IP_LINUX_TIME_OUT;
+        } else if (SystemUtils.IS_OS_LINUX) {
+            pingCommand += " " + ipAddress + " -c " + Constant.SINGLE_PING_IP_TIMES + " -W "
+                + Constant.SINGLE_PING_IP_LINUX_TIME_OUT;
+        } else {
+            logger.info("This os wasn't support.");
+            throw new CustomException(ErrorCode.CONNECTION_EXCEPTION_CODE, ErrorCode.CONNECTION_EXCEPTION_MSG);
+        }
+        logger.info("PingCommand : {}", pingCommand);
         return getResult(pingCommand);
     }
 
@@ -229,25 +208,47 @@ public class CommonUtil {
     private static Boolean getPingResult(Future<Boolean> future) {
         Boolean result = false;
         try {
-            result = getResult(future, result);
+            result = future.get(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.error("getPingResult failure...", e);
+            logger.error("GetPingResult failure...", e);
         } catch (ExecutionException e) {
-            logger.error("getPingResult failure...", e);
+            logger.error("GetPingResult failure...", e);
+        } catch (TimeoutException e) {
+            logger.error("Ping time out.", e);
         }
         return result;
     }
 
-    private static Boolean getResult(Future<Boolean> future, Boolean result) throws InterruptedException,
-        ExecutionException {
-        while (true) {
-            if (future.isDone()) {
-                result = future.get();
-                break;
-            }
-            TimeUnit.SECONDS.sleep(1);
+    /**
+     * Validate vmware info validation response.
+     *
+     * @param vmwareInfo the vmware info
+     * @return the validation response
+     * @throws CustomException the custom exception
+     */
+    public ValidationResponse validateVmwareInfo(VmwareInfo vmwareInfo) throws CustomException {
+        String vmwareId;
+        String ip = vmwareInfo.getIp();
+        String username = vmwareInfo.getUsername();
+        String password = vmwareInfo.getPassword();
+        if (StringUtils.isEmpty(ip) || StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
+            throw new CustomException(ErrorCode.VMWARE_YML_EMPTY_CODE, ErrorCode.VMWARE_YML_EMPTY_MSG);
         }
-        return result;
+        // ping IP
+        if (!ipCanBeConnectedDiffIpVersion(ip, Constant.IPV4)) {
+            logger.error("The IP is unreachable");
+            throw new CustomException(ErrorCode.FAILED_CODE, ErrorCode.IP_UNREACHABLE_ERROR_MSG);
+        }
+        try {
+            extendedAppUtil.getConnection().checkVmwareConnection("https://" + ip + "/sdk", username, password);
+        } catch (CustomException ex) {
+            throw ex;
+        } catch (Exception e) {
+            logger.error("Check vmware connection failed.", e);
+            throw new CustomException(ErrorCode.FAILED_CODE, ErrorCode.VMWARE_LOGIN_FAILED_ERROR_MSG);
+        }
+        vmwareId = generateUuid();
+        return new ValidationResponse().setValidationResult(true).setVmwareId(vmwareId);
     }
 
     private static boolean verSionNotValid(String ipVersion) {
@@ -280,9 +281,9 @@ public class CommonUtil {
      * @param localFile the local file
      * @param uploadUri the upload uri
      * @throws NoSuchAlgorithmException the no such algorithm exception
-     * @throws KeyStoreException the key store exception
-     * @throws KeyManagementException the key management exception
-     * @throws IOException the io exception
+     * @throws KeyStoreException        the key store exception
+     * @throws KeyManagementException   the key management exception
+     * @throws IOException              the io exception
      */
     public static void uploadFile(File localFile, URI uploadUri)
         throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
@@ -309,7 +310,7 @@ public class CommonUtil {
         if (object instanceof VirtualMachineConfigInfo) {
             return object;
         } else {
-            logger.error("getVmConfigInfo ClassCastException vm");
+            logger.error("GetVmConfigInfo ClassCastException vm");
             return null;
         }
     }

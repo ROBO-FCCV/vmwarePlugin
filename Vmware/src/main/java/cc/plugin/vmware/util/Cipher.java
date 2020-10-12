@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 /**
  * The type Cipher.
  *
@@ -36,12 +34,7 @@ public class Cipher {
         String[] cmdArr = new String[] {
             exe, rootLocation + Constant.encryptLocation, encryptionPassword
         };
-        try {
-            return RuntimeUtil.executeCommand(cmdArr);
-        } catch (IOException var4) {
-            logger.error("decryptZookeeperPassWord failed,cause:{}", var4);
-            return null;
-        }
+        return RuntimeUtil.executeCommand(cmdArr);
     }
 
     /**
@@ -55,12 +48,6 @@ public class Cipher {
         String[] cmdArr = new String[] {
             exe, rootLocation + Constant.decryptLocation, decryptionPassword
         };
-
-        try {
-            return RuntimeUtil.executeCommand(cmdArr);
-        } catch (IOException var4) {
-            logger.error("decryptZookeeperPassWord failed,cause:{}", var4);
-            return null;
-        }
+        return RuntimeUtil.executeCommand(cmdArr);
     }
 }

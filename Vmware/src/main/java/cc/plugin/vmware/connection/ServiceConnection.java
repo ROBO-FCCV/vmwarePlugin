@@ -5,6 +5,7 @@
 package cc.plugin.vmware.connection;
 
 import cc.plugin.vmware.exception.ApplicationException;
+import cc.plugin.vmware.exception.CustomException;
 
 import com.vmware.common.ssl.TrustAllHostNameVerifier;
 import com.vmware.common.ssl.TrustAllTrustManager;
@@ -85,8 +86,9 @@ public class ServiceConnection extends DefaultBasicConnection {
      * @param urlStr the url str
      * @param username the username
      * @param password the password
+     * @throws CustomException 自定义异常
      */
-    public void checkVmwareConnection(String urlStr, String username, String password) {
+    public void checkVmwareConnection(String urlStr, String username, String password) throws CustomException {
         setUrl(urlStr);
         setUsername(username);
         setPassword(password);

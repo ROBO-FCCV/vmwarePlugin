@@ -4,12 +4,12 @@
 
 package cc.plugin.vmware.model.vo.request.vm;
 
-import io.swagger.annotations.ApiModelProperty;
-
 import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+
+import io.swagger.annotations.ApiModelProperty;
 
 /**
  * 创建虚拟机实体类
@@ -472,5 +472,30 @@ public class VmConfigTemplate {
      */
     public void setAutoBoot(String autoBoot) {
         this.autoBoot = autoBoot;
+    }
+
+    @Override
+    public String toString() {
+        return "VmConfigTemplate{" +
+            "vmName='" + vmName + '\'' +
+            ", cloneVmOnly='" + cloneVmOnly + '\'' +
+            ", hostName='" + hostName + '\'' +
+            ", hostUrn='" + hostUrn + '\'' +
+            ", hostIp='" + hostIp + '\'' +
+            ", datacenterName='" + datacenterName + '\'' +
+            ", datastoreId='" + datastoreId + '\'' +
+            ", datastoreName='" + datastoreName + '\'' +
+            ", cpu=" + cpu +
+            ", memory=" + memory +
+            ", nics=" + nics +
+            ", disks=" + disks +
+            ", osType='" + osType + '\'' +
+            ", osVersion='" + osVersion + '\'' +
+            ", osFullName='" + osFullName + '\'' +
+            ", lunNames=" + lunNames +
+            ", templateName='" + templateName + '\'' +
+            ", autoBoot='" + autoBoot + '\'' +
+            ", appmanagement='" + appmanagement + '\'' +
+            '}';
     }
 }

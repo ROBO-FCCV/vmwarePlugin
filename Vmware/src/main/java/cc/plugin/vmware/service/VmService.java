@@ -34,11 +34,11 @@ import java.util.List;
 /**
  * The interface Vm service.
  *
- * @since 2019 -09-23
+ * @since 2019-09-23
  */
 public interface VmService {
     /**
-     * Pown on vm string.
+     * Power on vm string.
      *
      * @param vmwareId the vmware id
      * @param vmId the vm id
@@ -48,7 +48,7 @@ public interface VmService {
     String pownOnVm(String vmwareId, String vmId) throws CustomException;
 
     /**
-     * Pown off vm string.
+     * Power off vm string.
      *
      * @param vmwareId the vmware id
      * @param vmId the vm id
@@ -310,4 +310,24 @@ public interface VmService {
      * @throws CustomException the custom exception
      */
     List<VMVo> getVms(String vmwareId) throws CustomException;
+
+    /**
+     * Power on vm task string.
+     *
+     * @param vmwareId the vmware id
+     * @param vmId the vm id
+     * @return the string
+     * @throws CustomException the custom exception
+     */
+    String powerOnVmTask(String vmwareId, String vmId) throws CustomException;
+
+    /**
+     * Power off vm task string.
+     *
+     * @param vmwareId the vmware id
+     * @param vmId the vm id
+     * @return the string
+     * @throws CustomException the custom exception
+     */
+    String powerOffVmTask(String vmwareId, String vmId) throws CustomException;
 }

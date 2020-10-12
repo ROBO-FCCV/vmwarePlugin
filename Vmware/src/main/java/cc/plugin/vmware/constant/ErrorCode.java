@@ -194,4 +194,24 @@ public interface ErrorCode {
      * The constant CONNECT_VCENTER_ERROR_MSG.
      */
     String CONNECT_VCENTER_ERROR_MSG = "Failed to connect the vCenter.";
+
+    /**
+     * The constant CONNECT_VCENTER_VERSION_ERROR_CODE
+     */
+    String CONNECT_VCENTER_VERSION_ERROR_CODE = "0014";
+
+    /**
+     * The constant CONNECT_VCENTER_VERSION_ERROR_MSG
+     */
+    String CONNECT_VCENTER_VERSION_ERROR_MSG = "The vmware version type is not supported.";
+
+    /**
+     * The constant CONNECT_VCENTER_PRODUCT_ERROR_CODE
+     */
+    String CONNECT_VCENTER_PRODUCT_ERROR_CODE = "0015";
+
+    /**
+     * The constant CONNECT_VCENTER_PRODUCT_ERROR_MSG
+     */
+    String CONNECT_VCENTER_PRODUCT_ERROR_MSG = "The vmware plugin does not support ESXi products.";
 }
