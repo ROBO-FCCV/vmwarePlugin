@@ -144,6 +144,7 @@ function installTomcat()
     chmod 755 /var/log/plugin
     chmod 750 /var/log/plugin/${vmware_name}
     chown vmware:plugin /var/log/plugin/${vmware_name}
+    change_keystore_password
 }
 function deletetemdir()
 {
@@ -206,7 +207,65 @@ function add_cps() {
     echo "robouser ALL=(root) NOPASSWD: /bin/systemctl restart ${vmware_name}" >> /etc/sudoers.d/robouser
     echo "" >> /etc/sudoers.d/robouser
 }
+function change_keystore_password()
+{
+    local security_cfg_file=/opt/object_name/robo/security/priv/security.conf
 
+    local en_pass=`grep "^keystore_password=" ${security_cfg_file}|awk -F "=" '{print $2}'`
+    if [[ $? -ne 0 ]]; then
+       echo "Get keystore password fail."
+       exit 1
+    fi
+    local de_pass=`python -c "import kmc.kmc;print(kmc.kmc.API().decrypt(0, '${en_pass}'))"`
+    if [[ $? -ne 0 ]]; then
+       echo "Decrypt keystore password fail."
+       exit 1
+    fi
+
+    replace_keystore_password ${installDir} ${de_pass} "keystorePass" "tomcat.connector.https.keyMaterial"
+}
+function replace_keystore_password()
+{
+    local service_install_dir=$1
+    local input_pass=$2
+    local store_name=$3
+    local material_name=$4
+
+    cd ${service_install_dir}/lib
+    expect > ${currentDir}/temp_pass.info << EOF
+spawn bash encryptKeystorePass.sh
+expect {
+"keyStorePass:" {send "${input_pass}\r";exp_continue}
+}
+catch wait result;
+puts \$result;
+exit [lindex \$result 3]
+expect eof;
+EOF
+    if [[ $? -ne 0 ]]; then
+        echo  "Get tomcat keystore password file fail."
+        exit 1
+    fi
+    dos2unix ${currentDir}/temp_pass.info >> /dev/null 2>&1
+    local key=`grep "keystorePass=" ${currentDir}/temp_pass.info`
+    if [[ $? -ne 0 ]]; then
+        rm -rf  ${currentDir}/temp_pass.info
+        echo  "Get keystorePass error"
+        exit 1
+    fi
+    tomcat_key=${key#*=}
+    local key_material=`grep "tomcat.connector.https.keyMaterial=" ${currentDir}/temp_pass.info`
+    if [[ $? -ne 0 ]]; then
+        rm -rf ${currentDir}/temp_pass.info
+        echo  "Get keyMaterial error"
+        exit 1
+    fi
+    tomcat_key_material=${key_material#*=}
+    rm -rf ${currentDir}/temp_pass.info
+    sed -i "/${store_name}=/c ${store_name}=\"${tomcat_key}\"" ${service_install_dir}/conf/server.xml
+    sed -i "/${material_name}/c ${material_name}=${tomcat_key_material}" ${service_install_dir}/conf/catalina.properties
+    cd ${currentDir}
+}
 function log_config(){
     cat << EOF >> $logrotate_file
 $logrotate_path/* {
