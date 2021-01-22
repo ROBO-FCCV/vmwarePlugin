@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 current_dir=$(cd `dirname $0`; pwd)
 if [[ ${current_dir} == "." ]];then
     current_dir=$PWD

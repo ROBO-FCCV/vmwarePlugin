@@ -11,7 +11,7 @@ ExecStop=/bin/kill -s QUIT $MAINPID
 ExecReload=/bin/kill -s HUP $MAINPID
 PrivateTmp=true
 User=vmware
-Group=plugin
+Group=robogrp
 PermissionsStartOnly=true
 UMask=0077
 

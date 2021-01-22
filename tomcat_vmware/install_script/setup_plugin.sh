@@ -1,18 +1,26 @@
 #! /bin/bash
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 current_dir=$(dirname $0)
 if [[ ${current_dir} == "." ]];then
     current_dir=$PWD
 fi
 source ./utils.sh
-logfilepath="/var/log/plugin/${vmware_name}"
+logfilepath="/var/log/plugin"
 install_dir_plugin=/opt/plugin/${vmware_name}/tomcat
 temp_path=${install_dir_plugin}/temp
 local_ip=`python /usr/bin/get_info.py manage_ip`
 top_dir=$(dirname $(cd `dirname $0`; pwd))
 
-mkdir -p ${logfilepath}
+cd ../
+install_cur_dir=`pwd`
+obj_name=`grep ^install_path ${install_cur_dir}/conf/install.conf |awk -F'/' '{print $3}'`
+
+mkdir -p ${logfilepath}/${vmware_name}
 mkdir -p ${temp_path}
-touch ${logfilepath}/install_plugin.log
+touch ${logfilepath}/install_${vmware_name}.log
 
 function check_para (){
     ls ${top_dir}/software/*vmware*.war >> /dev/null 2>&1
@@ -36,6 +44,10 @@ function config_tomcat(){
     sed -i "s/19091/${vmware_getport}/g" ${install_dir_plugin}/bin/setenv.sh
     sed -i "s/19001/${vmware_outport}/g" ${install_dir_plugin}/conf/server.xml
     dos2unix ${install_dir_plugin}/conf/server.xml >> /dev/null 2>&1
+    local start_file=${install_dir_plugin}/bin/startup.sh
+    sed -i -c '/export LD_LIBRARY_PATH=/d' ${start_file}
+    line_num=$(sed -n -e '/EXECUTABLE=catalina.sh/=' ${start_file})
+    sed -i ${line_num}"a export LD_LIBRARY_PATH=/opt/${obj_name}/robo/kmc/lib"  ${start_file}
 }
 
 function del_dir(){

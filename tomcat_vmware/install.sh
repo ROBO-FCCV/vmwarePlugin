@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 current_dir=$(cd `dirname $0`; pwd)
 if [[ ${current_dir} == "." ]];then
     current_dir=$PWD
@@ -266,13 +270,13 @@ function install(){
         get_name
     fi
     pre_install
+    configur_add
     cd ${current_dir}/temp
     source ./utils.sh
     bash ./setup_tomcat.sh
     fn_log "setup_tomcat.sh"
     bash ./setup_plugin.sh
     fn_log "setup_plugin.sh"
-    configur_add
     cd ${current_dir}
     rm -rf ${current_dir}/temp
 }

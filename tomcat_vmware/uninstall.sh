@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 current_dir=$(cd `dirname $0`; pwd)
 if [[ ${current_dir} == "." ]];then
     current_dir=$PWD
@@ -64,15 +68,9 @@ function echoman () {
 echo "Usage: sh uninstall.sh [--service <service> | --all]"
 }
 
-function check(){
-    if [[ ! -f ${vmware_information_conf} ]];then
-        echo "The plugin is not installed"
-        exit 0
-    fi
-}
 
 function check_input() {
-    VMware_names=`grep "vmware_name" ${vmware_information_conf} | awk -F"=" '{print $2}' | xargs`
+    VMware_names=`grep "vmware_name" ${vmware_information_conf} | awk -F"=" '{print $2}' | xargs` >> /dev/null 2>&1
     VMware_item=$1
     for each in ${VMware_names[@]};do
         if [[ ${each} = ${VMware_item} ]];then
@@ -88,7 +86,7 @@ function show_item(){
         echo "The plugin is not installed"
         exit 1
     fi
-    VMware_names=`grep "vmware_name" ${vmware_information_conf} | awk -F"=" '{print $2}'`
+    VMware_names=`grep "vmware_name" ${vmware_information_conf} | awk -F"=" '{print $2}'` >> /dev/null 2>&1
     echo "************************************"
     echo ${VMware_names} | xargs -n 2
     echo "************************************"
@@ -169,11 +167,14 @@ function prompt_message()
 function delete_folder()
 {
     log_info "start delete folder ${VMware_item}"
+    if [[ ! -f ${vmware_information_conf} ]]; then
+        return 0
+    fi
     sum=`grep "vmware_name" ${vmware_information_conf} | wc -l`
     if [[ ${sum} -eq 1 ]];then
         rm -rf /opt/plugin/vmware_information_tool.sh >> /dev/null 2>&1
         rm -rf /opt/plugin/conf >> /dev/null 2>&1
-        userdel -f vmware
+        userdel -f vmware >> /dev/null 2>&1
         GID=`grep plugin /etc/group | awk -F":" '{print $3}'`
         user_count=`awk -F":" '{print $4 $6}' /etc/passwd |grep ${GID} | awk -F'/' '{print $3}' | wc -l`
         if [[ ${user_count} -eq 1 ]];then
@@ -229,6 +230,9 @@ function del_timerOfCheckVmware_jks()
 
 function remove_cps() {
     ##移除cps-monitor
+    if [[ ! -f ${vmware_information_conf} ]]; then
+       return 0
+    fi
     cps_dir=`grep "install_path" ${vmware_information_conf} |awk -F= '{print $2}'`
     cps_installDir="${cps_dir}/cps-monitor"
     reg_command_file="${cps_installDir}/cps_monitor/reg_monitor_cli.py"
@@ -268,7 +272,6 @@ function uninstall(){
 
 # ------------ main -------------
 
-check
 check_mode
 if [[ ${para_num} -ne 0 ]];then
     para_check
@@ -297,7 +300,7 @@ if [[ ${para_num} -ne 0 ]];then
         systemctl start cps-monitor.service
         fi
 
-        userdel -f vmware
+        userdel -f vmware >/dev/null 2>&1
         GID=`grep plugin /etc/group | awk -F":" '{print $3}'`
         user_count=`awk -F":" '{print $4 $6}' /etc/passwd |grep ${GID} | awk -F'/' '{print $3}' | wc -l`
         if [[ ${user_count} -eq 1 ]];then
@@ -307,6 +310,7 @@ if [[ ${para_num} -ne 0 ]];then
         rm -rf /opt/plugin/*
         rm -rf /var/log/plugin
         sed -i "/plugin\/vmware_plugin_/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
+        sed -i "/\/var\/log\/plugin\/\*.log/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
         sed -i "/vmware_plugin_/d" ${crontab_file} >> /dev/null 2>&1
         sed -i "/\/var\/log\/plugin/d" ${crontab_file} >> /dev/null 2>&1
         echo "Uninstall plugin success."
