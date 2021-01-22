@@ -1,61 +1,137 @@
-# Vmware-provider
+# VMware-provider
 
-Vmware-provider is a java project that can be used to access VMware vCenter.
+**README**
 
-## Preparing Tools
+[Chinese](README_ZH.md) | [English](README.md)
 
-Obtain the open-source tool [Apache Maven](https://maven.apache.org) and [Apache Tomcat](https://tomcat.apache.org), used for compiling and packaging open-source software.
+# Contents
+- [Abstract](#Abstract)
+- [Supported vCenter Versions](#Supported vCenter Versions)
+  - [Quick Start Guide](#Quick Start Guide)
+  - [Preparations](#Preparations)
+  - [Compilation and Packaging](#Compilation and Packaging)
+
+# Abstract
+
+**VMware-provider** is a Java Tomcat project. It provides vSphere Web Service APIs and vSphere Automation Java SDK for accessing VMware vCenter and performing operations on VMware vCenter resources.
+
+# Supported vCenter Versions
+
+| vSphere Web Service APIs                       | vSphere Automation Java SDK                            |
+| ---------------------------------------------- | ------------------------------------------------------ |
+| vCenter 5.5 , 6.0, 6.5, 6.7, 6.7U3, 7.0, 7.0U1 | vCenter 6.0, 6.5, 6.7, 6.7U1, 6.7U2, 6.7U3, 7.0, 7.0U1 |
+
+# Quick Start Guide
+
+This document provides guidance for you to get started with the VMware-provider. Before using the VMware-provider, you need to set up the vCenter test environment and install Maven. The following steps will guide you through this process.
+
+## Preparations
+
+### Installing JDK
+
+**Step 1** Download the JDK installation package of version `1.8` at  [https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html).
+
+**Step 2** Install the JDK.
+
+**Step 3** Create and set the **JAVA_HOME** environment variable to point to the JDK installation path.
+
+```
+JAVA_HOME=<jdk-install-dir>
+```
+
+**Step 4** Set the PATH environment variable to point to the **bin** directory in the JDK installation directory.
+
+```
+PATH=<jdk-bin-dir>
+```
+
+### Installing Maven
+
+**Step 1** Download the Maven installation package of version `3.0` or later at [https://maven.apache.org/download.cgi](https://maven.apache.org/download.cgi).
+
+**Step 2** Install Maven.
+
+**Step 3** Create and set the **MAVEN_HOME** environment variable to point to the Maven installation path.
+
+```shell
+MAVEN_HOME=<maven-install-dir>
+```
+
+**Step 4** Set the PATH environment variable to point to the **bin** directory in the Maven installation directory.
+
+```shell
+PATH=<maven-bin-dir>
+```
+
+### Downloading Tomcat
+
+Download the Tomcat installation package of a version later than `8.0` at [http://tomcat.apache.org/](http://tomcat.apache.org/).
+
+### <span id ="jar">Obtaining JAR Files</span>
+
+**Step 1** Download the vsphere-automation-sdk-java `v7.0.0.1` software package at [https://github.com/vmware/vsphere-automation-sdk-java/tree/v7.0.0.1](https://github.com/vmware/vsphere-automation-sdk-java/tree/v7.0.0.1).
+
+**Step 2** Decompress the software package to obtain the following JAR files in the **lib** directory:
+
+- nsx-java-sdk-2.5.1.0.1.15419398.jar
+- nsx-policy-java-sdk-2.5.1.0.1.15419398.jar
+- nsx-vmc-aws-integration-java-sdk-2.5.1.0.1.15419398.jar
+- nsx-vmc-policy-java-sdk-2.5.1.0.1.15419398.jar 
+- nsx-vmc-sdk-common-2.5.1.0.1.15419398.jar 
+- oidc-oauth2-sdk-0.0.1.jar
+- ssoclient.jar 
+- vapi-authentication-2.15.0.jar  
+- vapi-runtime-2.15.0.jar  
+- vapi-samltoken-2.15.0.jar 
+- vapi-vmc-sdk-2.15.0.jar  
+- vim25.jar 
+- vmc-bindings-1.24.0.jar  
+- vmc-draas-bindings-1.9.0.jar
+- vsphereautomation-client-sdk-3.3.0.jar
+- vsphereautomation-lookupservice-1.0.0.jar
 
 ## Compilation and Packaging
 
- **Step 1**      Create a folder named **lib**.
+**Step 1** Decompress the VMware-provider software package.
 
- **Step 2**      Download software packages vCloud Suite SDK for Java 6.0 and vSphere Management SDK 6.5. The download path is https://code.vmware.com/sdks.
+![](image/1.png)
 
- **Step 3**      Decompress the packages and change some file names. The following table lists the mappings between original and new file names.
+**Step 2** Go to the **Vmware** directory and create the **lib** directory.
 
-**Table 1-1** Mappings between original and new file names
+![](image/2.png)
 
-| Software Package              | Original File Name                   | New File Name      |
-| ----------------------------- | ------------------------------------ | ------------------ |
-| vSphere Management SDK 6.5    | vim25.jar                            | vmware.jar         |
-|                               | samples-core-1.0.0.jar               | core.jar           |
-| vCloud Suite SDK for Java 6.0 | vapi-authentication-1.0.0.jar        | authentication.jar |
-|                               | vapi-runtime-1.0.0.jar               | runtime.jar        |
-|                               | vapi-samltoken-1.0.0.jar             | samltoken.jar      |
-|                               | vcloudsuite-client-samples-6.0.0.jar | samples.jar        |
-|                               | vcloudsuite-client-sdk-6.0.0.jar     | client.jar         |
-|                               | vcloudsuite-lookupservice-6.0.0.jar  | lookupservice.jar  |
+**Step 3** Copy the obtained jar files to the **lib** directory.
 
-**Step 4**      Copy the renamed **jar** files to the **lib** folder. Although the names of the **wssamples.jar** file in the vSphere Management SDK 6.5, **ssoclient.jar** and **ssosamples.jar** files in the vCloud Suite SDK for Java 6.0 software package are not changed, copy them to the **lib** folder.
+**Step 4** Go to the **Vmware** directory and run the Maven command to compile and package the code. The commands are as follows:
 
-**Step 5**      Decompress the VMware source code package and copy the **lib** folder to the Vmware folder.
+```shell
+mvn initialize
+```
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/1.PNG)
+![](image/11.png)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/2.PNG)
+```shell
+mvn clean install
+```
 
-**Step 6**      Run the following command to compile and package the folder: mvn clean package.
+![](image/3.png)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/3.PNG)
+**Step 5** Wait until the packaging is successful.
 
-**Step 7**      If the "BUILD SUCCESS" message is displayed, the compilation and packaging are successful, and the **target** folder is automatically generated.
+![](image/4.png)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/4.PNG)
+**Step 6** Check whether the **vmware-x.x.war** package is generated in the **target** directory in the software package directory.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/5.PNG)
+![](image/5.png)
 
-**Step 8**      Copy the **vmware-x.x.war** file in the **target** folder to **\tomcat_vmware\software**.
+**Step 7** Copy **vmware-x.x.war** to **\tomcat_vmware\software**.
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/6.PNG)
+![](image/6.png)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/7.PNG)
+**Step 8** Copy the Tomcat installation package to **\tomcat_vmware\software**.
 
-**Step 9**      Copy the Apache Tomcat installation package in Preparing Tools to **\tomcat_vmware\software**.
+![](image/7.png)
 
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/8.PNG)
+**Step 9** Compress the **tomcat_vmware** directory to obtain the tomcat_vmware.tar.gz file.
 
-**Step 10**    Compress the **tomcat_vmware** folder into the **tomcat_vmware.tar.gz** file.
-
-![image](https://github.com/ROBO-FCCV/vmwarePlugin/blob/master/image/9.PNG)
-
+![](image/8.png)
