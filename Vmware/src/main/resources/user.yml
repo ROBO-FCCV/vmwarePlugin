@@ -1,0 +1,5 @@
+vmware:
+  user:
+    roles:
+      - admin
+    empire: PT30m
