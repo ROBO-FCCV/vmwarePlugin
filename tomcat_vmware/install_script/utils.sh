@@ -1,7 +1,12 @@
 #!/bin/bash
-logfile_path="/var/log/plugin/vmware_plugin"
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
+logfile_path="/var/log/plugin"
 mkdir -p /var/log/plugin/vmware_plugin
 touch ${logfile_path}/install_vmware_plugin.log
+chown root:robogrp -h ${logfile_path}/install_vmware_plugin.log
 chmod 640 ${logfile_path}/install_vmware_plugin.log
 function log_info ()
 {

@@ -1,10 +1,14 @@
 #!/bin/bash
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 current_dir=$(cd `dirname $0`; pwd)
 if [[ ${current_dir} == "." ]];then
     current_dir=$PWD
 fi
 object_name=`grep ^install_path ${current_dir}/conf/install.conf |awk -F'/' '{print $3}'`
-old_dir=/opt/plugin/
+old_dir=/opt/plugin
 logfile_path="/var/log/plugin"
 mkdir -p ${logfile_path}
 touch ${logfile_path}/update_vmware_plugin.log
@@ -56,7 +60,9 @@ function prompt_message()
         *)
             writeInfo "invalid user input."
             echo "Input invalid arguments.Are you sure you want to update ? (y/n)"
-            read key
+            if [[ ${i} -lt 4 ]]; then
+                read key
+            fi
             ;;
         esac
     done
@@ -93,7 +99,7 @@ function rollback(){
         ps -ef |grep /opt/plugin/vmware_plugin_|grep -v grep |awk '{print $2}'|xargs -I{} kill -9 {}
     fi
     rm -rf /opt/plugin/*
-    cp -rfp ${backup_path}/ /opt/plugin/
+    cp -rfp ${backup_path}/* /opt/plugin/
     #删除已经升级成功的vmware_p*.service
     new_service=$(find /usr/lib/systemd/system/ -name vmware_p*.service)
     for new_file in ${new_service};
@@ -132,9 +138,9 @@ function check_version() {
     rm -rf temp >> /dev/null 2>&1
     mkdir ${current_dir}/temp
     cp ${current_dir}/software/*vmware*.war temp/vmware.war
-    packwar=`basename temp/vmware.war`
+    packageWar=`basename temp/vmware.war`
     cd  temp
-    WarName=${packwar:0:${#packwar}-4}
+    WarName=${packageWar:0:${#packageWar}-4}
     mv ${WarName}.war ${WarName}.zip
     unzip ${WarName}.zip >> /dev/null 2>&1
     version_file=`find ./ -name version.yml`
@@ -170,6 +176,31 @@ function back_up() {
 function copy_data() {
     cp -rfp ${backup_path}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes >> /dev/null 2>&1
     cp -rfp ${backup_path}/$1/tomcat/webapps/vmware/WEB-INF/classes/login.yml ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes >> /dev/null 2>&1
+    if [[ -f ${old_dir}/vmware_information_tool.sh ]];then
+        version_file=$(find ${old_dir} -name version.yml | tail -1)
+    else
+        version_file=$(find ${backup_path} -name version.yml | tail -1)
+    fi
+    old_version=`awk '{print $2}' ${version_file}`
+    # 当待升级版本为1.3时，需要将旧tomcat的配置文件更新为新的tomcat配置文件
+    current_version=`awk '{print $2}' ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/version.yml`
+    if [[ ! -f ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak ]]; then
+         cp -rfp ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml  ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak
+    fi
+    sed -i "s#ORGANIZATION#${object_name}#g" ${current_dir}/install_script/yaml_upgrade.py
+    python ${current_dir}/install_script/yaml_upgrade.py "${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak" "${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/login.yml" "/opt/${object_name}/robo/sbin/"
+    if [[ $? -ne 0 ]]; then
+        writeInfo "Failed to convert data."
+        rollback
+        exit 1
+    fi
+    rm -rf ${current_dir}/install_script/temp_encrpy_file.txt
+    rm -rf ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak
+    rm -rf ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/login.yml
+    chown vmware:plugin -h ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml
+    chown vmware:plugin -h ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/user.yml
+    chmod 600 ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml
+    chmod 600 ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/user.yml
 }
 
 function remove_vmware()
@@ -196,7 +227,7 @@ function upgrade() {
     writeInfo "Start check update"
     check_update
     writeInfo "Finish check update"
-    if [[ -f ${old_dir}vmware_information_tool.sh ]];then
+    if [[ -f ${old_dir}/vmware_information_tool.sh ]];then
         version_file=$(find ${old_dir} -name version.yml | tail -1)
     else
         version_file=$(find ${backup_path} -name version.yml | tail -1)
@@ -220,10 +251,16 @@ function upgrade() {
         x=$(expr ${x} + 3)
         y=$(expr ${y} + 3)
         vmware_file=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_name | awk -F'=' '{print $2}')
-        vmware_getport=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_getport | awk -F'=' '{print $2}')
-        vmware_outport=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_outport | awk -F'=' '{print $2}')
+        vmware_get_port=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_get_port | awk -F'=' '{print $2}')
+        if [[ -z ${vmware_get_port} ]]; then
+             vmware_get_port=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_getport | awk -F'=' '{print $2}')
+        fi
+        vmware_out_port=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_out_port | awk -F'=' '{print $2}')
+        if [[ -z ${vmware_out_port} ]]; then
+             vmware_out_port=$(cat ${backup_path}/conf/vmware_information.conf | sed -n "${x},${y}p" | grep vmware_outport | awk -F'=' '{print $2}')
+        fi
         echo "Start upgrade ${vmware_file},please waiting....."
-        sh ${current_dir}/install.sh --upgrade ajax ${vmware_getport} ${vmware_outport} ${vmware_file} >> ${logfile_path}/update_vmware_plugin.log
+        sh ${current_dir}/install.sh --upgrade ajax ${vmware_get_port} ${vmware_out_port} ${vmware_file} >> ${logfile_path}/update_vmware_plugin.log
         if [[ $? -ne 0 ]];then
             echo "Plugin upgrade failed"
             rollback

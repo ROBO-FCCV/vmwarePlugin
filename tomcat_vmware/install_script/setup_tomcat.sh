@@ -1,3 +1,7 @@
+#
+# Copyright (c). 2021-2021. All rights reserved.
+#
+
 #/bin/bash
 
 #获取环境路径信息
@@ -73,7 +77,7 @@ function add_timerOfCheckVmware_jks()
     fi
     grep -w "/var/log/plugin" ${crontab_file} >> /dev/bull 2>&1
     if [[ $? -ne 0 ]];then
-        echo "*/10 * * * * root find /var/log/plugin -name \"*.gz\"  -print0  | xargs -0 chmod 400 " >> ${crontab_file}
+        echo "*/10 * * * * root find /var/log/plugin -name \"*.gz\"  -print0  | xargs -0 chmod 440 " >> ${crontab_file}
     fi
 }
 
@@ -111,74 +115,71 @@ function extractTempateTomcat()
     sed -i "s/vmware_plugin/${vmware_name}/g" ${install_temp_dir}/tomcat/bin/setenv.sh
     #写入web.xml的特殊配置
     sed -i "\#</web-app>#d" ${install_temp_dir}/tomcat/conf/web.xml
-    echo "    <security-constraint>
-        <web-resource-collection>
-            <url-pattern>/*</url-pattern>
-            <http-method>OPTIONS</http-method>
-            <http-method>HEAD</http-method>
-            <!--<http-method>PUT</http-method>
-            <http-method>DELETE</http-method>-->
-            <http-method>TRACE</http-method>
-        </web-resource-collection>
-        <auth-constraint>
-        </auth-constraint>
-    </security-constraint>
-
-    <error-page>
-        <error-code>400</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>401</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>402</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>403</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>404</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>405</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>406</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>407</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>413</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>414</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>500</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <error-code>501</error-code>
-        <location>/error.html</location>
-    </error-page>
-    <error-page>
-        <exception-type>java.lang.Throwable</exception-type>
-        <location>/error.html</location>
-    </error-page>
-
-</web-app>
-" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <security-constraint>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <web-resource-collection>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "            <url-pattern>/*</url-pattern>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "            <http-method>OPTIONS</http-method>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "            <http-method>HEAD</http-method>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "            <http-method>TRACE</http-method>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        </web-resource-collection>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <auth-constraint>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        </auth-constraint>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </security-constraint>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>404</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>403</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "       <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>400</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "   </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>402</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>401</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>405</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>406</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>407</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "       <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>413</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>414</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>501</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <error-code>500</error-code>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    <error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <exception-type>java.lang.Throwable</exception-type>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "        <location>/error.html</location>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "    </error-page>" >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo " " >> ${install_temp_dir}/tomcat/conf/web.xml
+    echo "</web-app>" >> ${install_temp_dir}/tomcat/conf/web.xml
     #写入catalina.policy的特殊配置
     echo " " >> ${install_temp_dir}/tomcat/conf/catalina.policy
     echo "grant {
@@ -231,7 +232,9 @@ EOF
     fi
     tomcat_key_material=${key_material#*=}
     rm -rf ${current_dir}/temp_pass.info
-    log_info "Get keyMaterial successfully" 
+    log_info "Get keyMaterial successfully"
+    local shutdown_command=$(mkpasswd -l 20 -s 0)
+    sed -i "s/server_shutdown_command/${shutdown_command}/g"  ${install_dir}/conf/server.xml
     sed -i "/keystorePass=/c keystorePass=\"${tomcat_key}\"" ${install_dir}/conf/server.xml
     sed -i s#maxPostSize\=\"53687091200\"#maxPostSize\=\"1024\"#g ${install_dir}/conf/server.xml
     sed -i "/tomcat.connector.https.keyMaterial/c tomcat.connector.https.keyMaterial=${tomcat_key_material}" ${install_dir}/conf/catalina.properties
@@ -241,20 +244,44 @@ EOF
     cd ${current_dir}
 }
 
+function log_file_deal()
+{
+    touch /var/log/plugin/install_${vmware_name}.log
+    chown root:robogrp /var/log/plugin/install_${vmware_name}.log
+    chmod 640 /var/log/plugin/install_${vmware_name}.log
+    touch /var/log/plugin/replace_certs.log
+    chown root:robogrp /var/log/plugin/replace_certs.log
+    chmod 640 /var/log/plugin/replace_certs.log
+    touch /var/log/plugin/${vmware_name}_pwd.log
+    chown root:robogrp /var/log/plugin/${vmware_name}_pwd.log
+    chmod 640 /var/log/plugin/${vmware_name}_pwd.log
+    touch /var/log/plugin/${vmware_name}_certificate_check.log
+    chown root:robogrp /var/log/plugin/${vmware_name}_certificate_check.log
+    chmod 640 /var/log/plugin/${vmware_name}_certificate_check.log
+    touch /var/log/plugin/${vmware_name}_vmware_user.log
+    chown root:robogrp /var/log/plugin/${vmware_name}_vmware_user.log
+    chmod 640 /var/log/plugin/${vmware_name}_vmware_user.log
+}
 function installTomcat()
 {
     cd ${current_dir}
-    cp -r ${install_temp_dir}/tomcat/* $install_dir/
-
+    cp -r ${install_temp_dir}/tomcat/* ${install_dir}/
+    cp ${install_dir}/lib/commons-codec-1.14.jar ${main_dire}/sbin/
+    cp ${install_dir}/lib/Http11Protocol.jar ${main_dire}/sbin/
+    chmod 500 ${main_dire}/sbin/*
+    chown root:root -R ${main_dire}/sbin
     ######修改配置
-    cp ${current_dir}/conf/configTemplate/server.xml $install_dir/conf/server.xml
+    cp ${current_dir}/conf/configTemplate/server.xml ${install_dir}/conf/server.xml
     cp ${current_dir}/conf/configTemplate/vmware_plugin.service /usr/lib/systemd/system/${vmware_name}.service
     sed -i "s/vmware_plugin/${vmware_name}/g" /usr/lib/systemd/system/${vmware_name}.service
     echo "tomcat.connector.https.keyMaterial=replace_object" >> ${install_dir}/conf/catalina.properties
 
 
     ######修改权限
-    chown -R vmware:plugin $main_dire
+    chown root:root -h ${main_dire}
+    chown root:root -R -h ${main_dire}/conf
+    chown vmware:plugin -R -h ${main_dire}/tomcat
+    chmod 755  ${main_dire}
     chmod 755 /opt/plugin
     chmod 755 /opt/plugin/cert
     chmod -R 700 ${install_dir}
@@ -263,6 +290,7 @@ function installTomcat()
     chmod 600 ${install_dir}/conf/*
     chmod 700 ${install_dir}/logs
     chmod 700 ${install_dir}/webapps
+    log_file_deal
 
     sed -i "s/CATALINA_OUT=/#&/g" ${install_dir}/bin/catalina.sh
     sed -i "/CATALINA_OUT=/a\  CATALINA_OUT=/var/log/plugin/${vmware_name}/catalina.out" ${install_dir}/bin/catalina.sh
@@ -273,7 +301,7 @@ function installTomcat()
     mkdir -p /var/log/plugin/${vmware_name}
     chmod 755 /var/log/plugin
     chmod 750 /var/log/plugin/${vmware_name}
-    chown vmware:plugin /var/log/plugin/${vmware_name}
+    chown vmware:robogrp /var/log/plugin/${vmware_name}
     chmod 500 ${main_dire}/sbin/*
     chown root:root -R ${main_dire}/sbin
     change_keystore_password
@@ -288,10 +316,6 @@ function add_file()
     if [[ ! -d /opt/plugin/sbin ]];then
         mkdir -p /opt/plugin/sbin
     fi
-    if [[ ! -f /opt/plugin/sbin/registry_cps.sh ]];then
-        cp ${current_dir}/registry_cps.sh /opt/plugin/sbin
-        chmod 500 /opt/plugin/sbin/registry_cps.sh
-    fi
     if [[ ! -f /opt/plugin/sbin/replace_certs.sh ]];then
         cp ${current_dir}/replace_certs.sh /opt/plugin/sbin
         chmod 500 /opt/plugin/sbin/replace_certs.sh
@@ -301,16 +325,35 @@ function add_file()
     cp ${install_cur_dir}/uninstall.sh ${main_dire}/sbin
     cp ${current_dir}/vmware_pass_update.py ${tool_file}
     cp ${current_dir}/replace_vmware_plugin_certs.sh ${tool_file}
+    cp ${current_dir}/file_check.sh ${tool_file}
     if [[ ! -f /opt/plugin/vmware_information_tool.sh ]];then
-        cp ${current_dir}/vmware_information_tool.sh /opt/plugin
-        chmod 500 /opt/plugin/vmware_information_tool.sh
+        cp ${current_dir}/vmware_information_tool.sh /opt/plugin/sbin
+        chmod 500 /opt/plugin/sbin/vmware_information_tool.sh
     fi
+    if [[ ! -f /opt/plugin/vmware_info_tool.sh ]];then
+        cp ${current_dir}/vmware_info_tool.sh /opt/plugin/
+        chmod 550 /opt/plugin/vmware_info_tool.sh
+        chown vmware:robogrp /opt/plugin/vmware_info_tool.sh
+    fi
+
+    if [[ ! -f /opt/plugin/replace_vmware_certs.sh ]];then
+        cp ${current_dir}/replace_vmware_certs.sh /opt/plugin/
+        chmod 550 /opt/plugin/replace_vmware_certs.sh
+        chown vmware:robogrp /opt/plugin/replace_vmware_certs.sh
+    fi
+
     if [[ ! -f /opt/plugin/sbin/uninstall.sh ]];then
         cp ${install_cur_dir}/uninstall.sh /opt/plugin/sbin
         chmod 500 /opt/plugin/sbin/uninstall.sh
     fi
+
+    cp ${current_dir}/vmware_tool.sh /opt/plugin/${vmware_name}/
+    chmod 550 /opt/plugin/${vmware_name}/vmware_tool.sh
+    chown vmware:robogrp /opt/plugin/${vmware_name}/vmware_tool.sh
+    echo "sudo /opt/plugin/${vmware_name}/tool/vmware_tool.py \$@" >> /opt/plugin/${vmware_name}/vmware_tool.sh
+
     chmod 500 ${tool_file}/*
-    chown root:root -R ${tool_file}
+    chown root:root -R -h ${tool_file}
     cp ${current_dir}/cert_gen.sh ${main_dire}/sbin
     cp ${current_dir}/openssl.cnf ${main_dire}/sbin
     cp ${current_dir}/vmware_cert_check.sh ${main_dire}/sbin
@@ -324,13 +367,24 @@ function add_file()
     done
 
     chmod 500 ${main_dire}/sbin/*
-    chown root:root -R ${main_dire}/sbin
+    chown root:root -R -h ${main_dire}/sbin
 
-    cp ${install_cur_dir}/conf/install.conf $conf_file
+    cp ${install_cur_dir}/conf/install.conf ${conf_file}
+    chown root:root ${conf_file}
     echo "" >> ${conf_file}/install.conf
     echo "vmware_name=${vmware_name}" >> ${conf_file}/install.conf
     echo "vmware_getport=${vmware_getport}" >> ${conf_file}/install.conf
     echo "vmware_outport=${vmware_outport}" >> ${conf_file}/install.conf
+}
+
+function add_sudoer(){
+    grep 'vmware_information_tool.sh' /etc/sudoers.d/robomanager >> /dev/null 2>&1
+    if [[ $? -ne 0 ]];then
+        echo 'robomanager ALL=(root) NOPASSWD: /opt/plugin/sbin/vmware_information_tool.sh' >> /etc/sudoers.d/robomanager
+        echo 'robomanager ALL=(root) NOPASSWD: /opt/plugin/sbin/replace_certs.sh' >> /etc/sudoers.d/robomanager
+    fi
+    echo "robomanager ALL=(root) NOPASSWD: /opt/plugin/${vmware_name}/tool/vmware_tool.py" >> /etc/sudoers.d/robomanager
+
 }
 
 function cps_check(){
@@ -341,11 +395,16 @@ function cps_check(){
 function add_cps() {
 ##加入cps-monitor
     ${reg_command_file} reg ${vmware_name} --type 1 --cmd "/opt/plugin/${vmware_name}" --proc-num 1 --heartbeat-timeout 20 --heartbeat-interval 15 --no-control  --restart-script "sudo /bin/systemctl restart ${vmware_name}"
-    echo "robouser ALL=(root) NOPASSWD: /bin/systemctl restart ${vmware_name}" >> /etc/sudoers.d/robouser
-    echo "" >> /etc/sudoers.d/robouser
+    grep "${vmware_name}" /etc/sudoers.d/robouser >> /dev/bull 2>&1
+    if [[ $? -ne 0 ]];then
+        echo "robouser ALL=(root) NOPASSWD: /bin/systemctl restart ${vmware_name}" >> /etc/sudoers.d/robouser
+        echo "" >> /etc/sudoers.d/robouser
+    fi
 }
 
 function log_config(){
+grep '/var/log/plugin/*.log' ${logrotate_file} >> /var/log/plugin/install_${vmware_name}.log 2>&1
+if [[ $? -ne 0 ]]; then
     cat << EOF >> ${logrotate_file}
 ${logrotate_path}/* {
     missingok
@@ -353,9 +412,29 @@ ${logrotate_path}/* {
     compress
     size=10M
     copytruncate
-    create 0640 tomcat robogrp
+    create 0640 vmware robogrp
 }
 EOF
+else
+    cat << EOF >> ${logrotate_file}
+${logrotate_path}/* {
+    missingok
+    rotate 10
+    compress
+    size=10M
+    copytruncate
+    create 0640 vmware robogrp
+}
+/var/log/plugin/*.log {
+    missingok
+    rotate 10
+    compress
+    size=10M
+    copytruncate
+    create 0640 vmware robogrp
+}
+EOF
+fi
 }
 
 function auto_start(){
@@ -366,13 +445,12 @@ function auto_start(){
 cps_check
 createDir
 add_file
+add_sudoer
 gen_cert
 add_timerOfCheckVmware_jks >> /dev/null 2>&1
 extractTempateTomcat
 installTomcat
 deletetemdir
-auto_start >> /var/log/plugin/${vmware_name}/install_plugin.log 2>&1
+auto_start >> /var/log/plugin/install_${vmware_name}.log 2>&1
 add_cps
 log_config
-
-
