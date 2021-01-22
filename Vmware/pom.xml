@@ -1,212 +1,422 @@
 <!--
-  ~ Copyright (c). 2020-2020. All rights reserved.
+  ~ Copyright (c). 2021-2021. All rights reserved.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.5.RELEASE</version>
+        <version>2.2.10.RELEASE</version>
         <relativePath/>
     </parent>
+    <groupId>com.vmware</groupId>
     <artifactId>vmware</artifactId>
-    <version>1.2</version>
-    <name>Vmware</name>
+    <version>1.3</version>
     <packaging>war</packaging>
 
+    <name>Vmware</name>
+    <url>https://github.com/ROBO-FCCV/vmwarePlugin</url>
+
     <properties>
-        <!--                spring-->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <build.java.version>1.8</build.java.version>
-        <!--                spring-->
-        <spring.version>5.2.4.RELEASE</spring.version>
-        <spring.boot.version>2.2.5.RELEASE</spring.boot.version>
-        <log4j2.version>2.13.2</log4j2.version>
-        <!--                frame-->
+        <vapi.version>2.15.0</vapi.version>
+        <lookupservice.version>1.0.0</lookupservice.version>
+        <vspherewssdk.version>7.0.1</vspherewssdk.version>
+        <vsphereautomationsdk.version>3.3.0</vsphereautomationsdk.version>
+        <vmc.version>1.24.0</vmc.version>
+        <nsxpolicysdk.version>2.5.1.0.1.15419398</nsxpolicysdk.version>
+        <nsxvmcawsint.version>2.5.1.0.1.15419398</nsxvmcawsint.version>
+        <nsxvmcsdkcommon.version>2.5.1.0.1.15419398</nsxvmcsdkcommon.version>
+        <vmc.draas.version>1.9.0</vmc.draas.version>
+        <oidc-oauth2.version>0.0.1</oidc-oauth2.version>
+
+        <json-smart.version>2.3</json-smart.version>
         <pac4j.version>3.3.0</pac4j.version>
-        <!--                common tools-->
-        <commons-compress.version>1.18</commons-compress.version>
         <commons-lang3.version>3.9</commons-lang3.version>
-        <commons-collections.version>4.4</commons-collections.version>
-        <jsch.version>0.1.55</jsch.version>
-        <fastjson.version>1.2.70</fastjson.version>
-        <jackson.version>2.10.0</jackson.version>
-        <jackson-databind.version>2.10.0</jackson-databind.version>
-        <freemarker.version>2.3.28</freemarker.version>
-        <disruptor.version>3.4.2</disruptor.version>
-        <commons-io.version>2.6</commons-io.version>
-        <guava.version>28.2-jre</guava.version>
-        <dozer.version>6.4.1</dozer.version>
-        <commons.lang.version>2.6</commons.lang.version>
-        <jackson.mapper.version>1.9.13</jackson.mapper.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
+        <commons-configuration.version>1.10</commons-configuration.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <commons-io.version>2.6</commons-io.version>
     </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <source>8</source>
+                    <target>8</target>
+                    <fork>true</fork>
+                    <meminitial>1024m</meminitial>
+                    <maxmem>2048m</maxmem>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3.1</version>
+                <executions>
+                    <execution>
+                        <id>install-oidc-oauth2-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vapi</groupId>
+                            <artifactId>oidc-oauth2-sdk</artifactId>
+                            <version>${oidc-oauth2.version}</version>
+                            <file>./lib/oidc-oauth2-sdk-${oidc-oauth2.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-draas-bindings</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vmc</groupId>
+                            <artifactId>vmc-draas-bindings</artifactId>
+                            <version>${vmc.draas.version}</version>
+                            <file>./lib/vmc-draas-bindings-${vmc.draas.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vapi-runtime</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vapi</groupId>
+                            <artifactId>vapi-runtime</artifactId>
+                            <version>${vapi.version}</version>
+                            <file>./lib/vapi-runtime-${vapi.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vapi-authentication</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vapi</groupId>
+                            <artifactId>vapi-authentication</artifactId>
+                            <version>${vapi.version}</version>
+                            <file>./lib/vapi-authentication-${vapi.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vapi-samltoken</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vapi</groupId>
+                            <artifactId>vapi-samltoken</artifactId>
+                            <version>${vapi.version}</version>
+                            <file>./lib/vapi-samltoken-${vapi.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vim25</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vim25</groupId>
+                            <artifactId>vim25</artifactId>
+                            <version>${vspherewssdk.version}</version>
+                            <file>./lib/vim25.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-ssoclient</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.sso</groupId>
+                            <artifactId>ssoclient</artifactId>
+                            <version>${vspherewssdk.version}</version>
+                            <file>./lib/ssoclient.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-lookupservice</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vsphereautomation.lookup</groupId>
+                            <artifactId>vsphereautomation-lookupservice</artifactId>
+                            <version>${lookupservice.version}</version>
+                            <file>./lib/vsphereautomation-lookupservice-${lookupservice.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vsphere-bindings</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware</groupId>
+                            <artifactId>vsphereautomation-client-sdk</artifactId>
+                            <version>${vsphereautomationsdk.version}</version>
+                            <file>./lib/vsphereautomation-client-sdk-${vsphereautomationsdk.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vmc-bindings</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vmc</groupId>
+                            <artifactId>vmc-bindings</artifactId>
+                            <version>${vmc.version}</version>
+                            <file>./lib/vmc-bindings-${vmc.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-vapi-vmc-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.vapi</groupId>
+                            <artifactId>vapi-vmc-sdk</artifactId>
+                            <version>${vapi.version}</version>
+                            <file>./lib/vapi-vmc-sdk-${vapi.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-nsx-policy-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.nsx</groupId>
+                            <artifactId>nsx-policy-java-sdk</artifactId>
+                            <version>${nsxpolicysdk.version}</version>
+                            <file>./lib/nsx-policy-java-sdk-${nsxpolicysdk.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-nsx-vmc-policy-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.nsx</groupId>
+                            <artifactId>nsx-vmc-policy-java-sdk</artifactId>
+                            <version>${nsxpolicysdk.version}</version>
+                            <file>./lib/nsx-vmc-policy-java-sdk-${nsxpolicysdk.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-nsx-vmc-aws-integration-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.nsx</groupId>
+                            <artifactId>nsx-vmc-aws-integration-sdk</artifactId>
+                            <version>${nsxvmcawsint.version}</version>
+                            <file>./lib/nsx-vmc-aws-integration-java-sdk-${nsxvmcawsint.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-nsx-vmc-sdk-common</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <groupId>com.vmware.nsx</groupId>
+                            <artifactId>nsx-vmc-sdk-common</artifactId>
+                            <version>${nsxvmcsdkcommon.version}</version>
+                            <file>./lib/nsx-vmc-sdk-common-${nsxvmcsdkcommon.version}.jar</file>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.7.1</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <finalName>vsphere-samples-${project.version}</finalName>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>commons-beanutils</groupId>
-                <artifactId>commons-beanutils</artifactId>
-                <version>${commons-beanutils.version}</version>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <!-- provided jar-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vapi</groupId>
+            <artifactId>oidc-oauth2-sdk</artifactId>
+            <version>${oidc-oauth2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vmc</groupId>
+            <artifactId>vmc-draas-bindings</artifactId>
+            <version>${vmc.draas.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vapi</groupId>
+            <artifactId>vapi-runtime</artifactId>
+            <version>${vapi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vapi</groupId>
+            <artifactId>vapi-authentication</artifactId>
+            <version>${vapi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vapi</groupId>
+            <artifactId>vapi-samltoken</artifactId>
+            <version>${vapi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>vsphereautomation-client-sdk</artifactId>
+            <version>${vsphereautomationsdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vmc</groupId>
+            <artifactId>vmc-bindings</artifactId>
+            <version>${vmc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vapi</groupId>
+            <artifactId>vapi-vmc-sdk</artifactId>
+            <version>${vapi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.nsx</groupId>
+            <artifactId>nsx-vmc-policy-java-sdk</artifactId>
+            <version>${nsxpolicysdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.nsx</groupId>
+            <artifactId>nsx-vmc-aws-integration-sdk</artifactId>
+            <version>${nsxvmcawsint.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.nsx</groupId>
+            <artifactId>nsx-vmc-sdk-common</artifactId>
+            <version>${nsxvmcsdkcommon.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vim25</groupId>
+            <artifactId>vim25</artifactId>
+            <version>${vspherewssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.sso</groupId>
+            <artifactId>ssoclient</artifactId>
+            <version>${vspherewssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vsphereautomation.lookup</groupId>
+            <artifactId>vsphereautomation-lookupservice</artifactId>
+            <version>${lookupservice.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>${commons-collections4.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>${commons-beanutils.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>${spring.boot.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>2.9.2</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>2.9.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>swagger-bootstrap-ui</artifactId>
-            <version>1.9.6</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- vmware jar -->
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>vmware</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/vmware.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>core</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/core.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>wssamples</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/wssamples.jar</systemPath>
         </dependency>
 
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>ssoclient</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/ssoclient.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>authentication</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/authentication.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>runtime</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/runtime.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>samltoken</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/samltoken.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>samples</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/samples.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>client</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/client.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>lookupservice</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/lookupservice.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>vmware.plugin</groupId>
-            <artifactId>ssosamples</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/ssosamples.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.dozermapper</groupId>
-            <artifactId>dozer-core</artifactId>
-            <version>${dozer.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-io</artifactId>
-                    <groupId>commons-io</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>${commons.lang.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson.mapper.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-            <version>${spring.boot.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
@@ -217,7 +427,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring.boot.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>spring-boot-starter-tomcat</artifactId>
@@ -228,7 +437,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
-            <version>${spring.boot.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
@@ -236,8 +444,36 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!--            pac4j-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.pac4j</groupId>
             <artifactId>pac4j-jwt</artifactId>
@@ -249,71 +485,34 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- log-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-            <version>${spring.boot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.lmax</groupId>
-            <artifactId>disruptor</artifactId>
-            <version>${disruptor.version}</version>
-        </dependency>
-
-        <!--            httpclient-->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-        </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commons-io.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>${commons-collections.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>${fastjson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-            <version>${spring.version}</version>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.68</version>
         </dependency>
     </dependencies>
-
-    <build>
+    <reporting>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.0.0</version>
                 <configuration>
-                    <source>${build.java.version}</source>
-                    <target>${build.java.version}</target>
+                    <configLocation>checkstyle.xml</configLocation>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <configuration>
-                    <webResources>
-                        <resource>
-                            <directory>${project.basedir}/lib/</directory>
-                            <targetPath>WEB-INF/lib</targetPath>
-                            <filtering>false</filtering>
-                            <includes>
-                                <include>**/*.jar</include>
-                            </includes>
-                        </resource>
-                    </webResources>
-                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
             </plugin>
         </plugins>
-    </build>
+    </reporting>
 </project>

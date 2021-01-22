@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-  ~ Copyright (c). 2020-2020. All rights reserved.
+  ~ Copyright (c). 2021-2021. All rights reserved.
   -->
 
 <configuration status="INFO" monitorInterval="60">
@@ -18,6 +18,7 @@
             <AppenderRef ref="console"/>
             <AppenderRef ref="rolling_file"/>
         </AsyncRoot>
+        <AsyncLogger name="org.pac4j.jwt" level="off" additivity="false" includeLocation="true"></AsyncLogger>
     </Loggers>
     <Appenders>
         <Console name="console" target="SYSTEM_OUT" follow="true">
