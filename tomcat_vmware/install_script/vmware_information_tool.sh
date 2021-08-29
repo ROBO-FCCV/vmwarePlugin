@@ -10,6 +10,7 @@ fi
 check_dir=${currentDir}/..
 base_dir=/opt/plugin
 options="port account"
+source /opt/huawei/robo/utils/file_check.sh
 option=$1
 para_num=$#
 

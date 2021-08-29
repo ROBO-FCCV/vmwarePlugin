@@ -4,12 +4,14 @@
 
 package com.vmware.sample.service.impl;
 
+import com.vmware.sample.config.KmcProperties;
 import com.vmware.sample.config.VMwareProperties;
 import com.vmware.sample.enums.Operation;
 import com.vmware.sample.enums.RestCodeEnum;
 import com.vmware.sample.exception.PluginException;
 import com.vmware.sample.model.VMware;
 import com.vmware.sample.service.VMwareService;
+import com.vmware.sample.util.KmcUtils;
 import com.vmware.sample.util.SensitiveExceptionUtils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -56,6 +58,7 @@ public class VMwareServiceImpl implements VMwareService {
     private final VMwareProperties vMwareProperties;
     private final ConcurrentHashMap<String, VMwareAPI> stringVMwareAPIMap;
     private final ConcurrentHashMap<String, VMwareSDK> stringVMwareSDKMap;
+    private final KmcProperties kmcProperties;
     private final ApplicationContext applicationContext;
     private final ThreadPoolTaskExecutor taskExecutor;
 
@@ -95,6 +98,10 @@ public class VMwareServiceImpl implements VMwareService {
             Map<String, VMware> configs = vMwareYaml.get("vmware").getConfigs();
             VMware copy = new VMware();
             BeanUtils.copyProperties(vmware, copy);
+            if (kmcProperties.isEnabled()) {
+                KmcUtils kmcUtils = applicationContext.getBean(KmcUtils.class);
+                copy.setPassword(kmcUtils.encrypt(String.valueOf(copy.getPassword())).toCharArray());
+            }
             switch (operation) {
                 case ADD:
                     configs.put(copy.getId(), copy);

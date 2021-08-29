@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 @Service("vm-template-sdk-service")
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class VmTemplateSDKService implements VmTemplateService {
-
     @Override
     public LibraryItemTypes.DeploymentResult deploy(String vmwareId, String libraryItemId,
         LibraryItemTypes.DeploymentTarget deploymentTarget,

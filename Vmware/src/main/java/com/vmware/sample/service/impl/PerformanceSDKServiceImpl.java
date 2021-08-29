@@ -8,6 +8,7 @@ import com.vmware.sample.consts.VMConstants;
 import com.vmware.sample.consts.VMwareConstants;
 import com.vmware.sample.factory.ManagedObjectReferenceBuilder;
 import com.vmware.sample.model.datastore.DatastoreBasic;
+import com.vmware.sample.model.performace.AssembleReq;
 import com.vmware.sample.model.performace.PerformanceData;
 import com.vmware.sample.model.performace.PerformanceReq;
 import com.vmware.sample.service.DatastoreService;
@@ -99,27 +100,35 @@ public class PerformanceSDKServiceImpl implements PerformanceService {
                     && item.getRollupType().name().equalsIgnoreCase(AVERAGE))
                 .sorted(Comparator.comparingInt(PerfCounterInfo::getKey))
                 .collect(Collectors.toList());
-            return assembleData(vmwareId, type, diskUsage, perfEntityMetricBases, perfCounterInfos, performanceReq);
+            AssembleReq assembleReq = AssembleReq.builder()
+                .vmwareId(vmwareId)
+                .type(type)
+                .diskUsage(diskUsage)
+                .perfEntityMetricBases(perfEntityMetricBases)
+                .perfCounterInfos(perfCounterInfos)
+                .performanceReq(performanceReq)
+                .build();
+            return assembleData(assembleReq);
         } catch (RuntimeFaultFaultMsg runtimeFaultFaultMsg) {
             log.error("RuntimeFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(runtimeFaultFaultMsg));
         }
         return Collections.emptyList();
     }
 
-    private List<PerformanceData> assembleData(String vmwareId, String type, boolean diskUsage,
-        List<PerfEntityMetric> perfEntityMetricBases, List<PerfCounterInfo> perfCounterInfos,
-        PerformanceReq performanceReq) {
-        Map<Integer, PerfCounterInfo> collect = perfCounterInfos.stream()
+    private List<PerformanceData> assembleData(AssembleReq assembleReq) {
+        Map<Integer, PerfCounterInfo> collect = assembleReq.getPerfCounterInfos()
+            .stream()
             .collect(Collectors.toMap(PerfCounterInfo::getKey, item -> item, (first, second) -> second));
         List<PerformanceData> performanceDataList = new ArrayList<>();
-        for (PerfEntityMetric perfEntityMetric : perfEntityMetricBases) {
+        for (PerfEntityMetric perfEntityMetric : assembleReq.getPerfEntityMetricBases()) {
             PerformanceData performanceData = new PerformanceData();
             performanceData.setObjectId(perfEntityMetric.getEntity().getValue());
             List<PerformanceData.Indicator> indicators = new ArrayList<>();
-            calculateMetricValue(performanceReq, collect, perfEntityMetric, indicators);
+            calculateMetricValue(assembleReq.getPerformanceReq(), collect, perfEntityMetric, indicators);
             // The disk usage is not used in the performance data, which needs to be calculated separately.
-            if (diskUsage) {
-                calculateDiskUsage(vmwareId, type, performanceData.getObjectId(), indicators);
+            if (assembleReq.isDiskUsage()) {
+                calculateDiskUsage(assembleReq.getVmwareId(), assembleReq.getType(), performanceData.getObjectId(),
+                    indicators);
             }
             performanceData.setIndicators(indicators);
             performanceDataList.add(performanceData);

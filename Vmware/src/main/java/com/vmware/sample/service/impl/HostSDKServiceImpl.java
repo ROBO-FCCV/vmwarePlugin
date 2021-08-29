@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
@@ -273,7 +274,9 @@ public class HostSDKServiceImpl implements HostService {
             List<ObjectContent> retrieveProperties = vmwareSDKClient.retrieveProperties(sdkInstance,
                 (ManagedObjectReference) val, Collections.singletonList(VMwareConstants.RESOURCE_POOL));
             Object val1 = retrieveProperties.get(0).getPropSet().get(0).getVal();
-            return (ManagedObjectReference) val1;
+            if (val1 instanceof ManagedObjectReference) {
+                return (ManagedObjectReference) val1;
+            }
         }
         return new ManagedObjectReference();
     }
@@ -293,7 +296,7 @@ public class HostSDKServiceImpl implements HostService {
                 return lookupSerialNumber(otherIdentifyingInfo);
             }
         }
-        return null;
+        return Strings.EMPTY;
     }
 
     private String lookupSerialNumber(List<HostSystemIdentificationInfo> otherIdentifyingInfo) {
@@ -302,7 +305,7 @@ public class HostSDKServiceImpl implements HostService {
                 hostSystemIdentificationInfo.getIdentifierValue();
             }
         }
-        return null;
+        return Strings.EMPTY;
     }
 
     private DynamicProperty getDynamicProperty(String hostId, VMwareSDK sdkInstance, String configManager) {

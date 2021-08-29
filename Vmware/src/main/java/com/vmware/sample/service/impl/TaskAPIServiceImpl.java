@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 @Service("task-api-service")
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class TaskAPIServiceImpl implements TaskService {
-
     @Override
     public TaskInfo get(String vmwareId, String taskId) {
         throw new PluginException(RestCodeEnum.API_NONE_IMPLEMENT);

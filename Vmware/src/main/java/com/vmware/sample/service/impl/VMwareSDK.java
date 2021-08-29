@@ -67,9 +67,12 @@ public class VMwareSDK extends AbstractVMware {
             .toUri();
         this.vimService = new VimService();
         this.vimPort = vimService.getVimPort();
-        Map<String, Object> ctxt = ((BindingProvider) vimPort).getRequestContext();
-        ctxt.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, uri.toString());
-        ctxt.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
+        Map<String, Object> ctxt = null;
+        if (vimPort instanceof BindingProvider) {
+            ctxt = ((BindingProvider) vimPort).getRequestContext();
+            ctxt.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, uri.toString());
+            ctxt.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
+        }
         try {
             serviceContent = vimPort.retrieveServiceContent(SVC_INST_REF);
             currentSession = this.vimPort.login(serviceContent.getSessionManager(), vMware.getUsername(),

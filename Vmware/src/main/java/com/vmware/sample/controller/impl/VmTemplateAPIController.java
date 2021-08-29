@@ -34,7 +34,8 @@ public class VmTemplateAPIController extends AbstractVMwareController implements
     }
 
     @Override
-    public RestResult<LibraryItemTypes.DeploymentResult> deploy(String vmwareId, String libraryItemId, DeploymentSpec deploymentSpec) {
+    public RestResult<LibraryItemTypes.DeploymentResult> deploy(String vmwareId, String libraryItemId,
+        DeploymentSpec deploymentSpec) {
         return RestResult.success(deployOvf(vmTemplateService, vmwareId, libraryItemId, deploymentSpec));
     }
 }

@@ -57,12 +57,26 @@ function para_check(){
 }
 
 function add_user(){
-
     grep vmware /etc/passwd >> /dev/null 2>&1
     if [[ $? -ne 0 ]];then
         groupadd -f plugin
-        useradd -g plugin -G robogrp -M -s /sbin/nologin vmware >> /dev/null 2>&1
+        useradd -g plugin -G robogrp -s /sbin/nologin vmware >> /dev/null 2>&1
     fi
+    if [[ ! -d /opt/huawei/robo/paas/vmware ]];then
+        #paas目录创建vmware专用data1 data2
+        mkdir -p /opt/huawei/robo/paas/vmware
+        chown root:robogrp /opt/huawei/robo/paas/vmware/
+        chmod 750 /opt/huawei/robo/paas/vmware/
+        #cp /opt/huawei/robo/paas/tomcat/* /opt/huawei/robo/paas/vmware/
+        python -c "import kmc.kmc;import os;os.environ['KMC_DATA_USER']='vmware'; print(kmc.kmc.API().create_mk(0))" >> /dev/null
+    fi
+    if [[ ! -d /home/vmware ]]; then
+        mkdir -p /home/vmware
+        chown vmware:plugin /home/vmware
+        chmod 700 /home/vmware
+    fi
+    chown -h vmware:robogrp /opt/huawei/robo/paas/vmware/*
+    chmod 600 /opt/huawei/robo/paas/vmware/*
 }
 
 function Interaction(){

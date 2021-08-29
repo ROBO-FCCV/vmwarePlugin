@@ -4,8 +4,15 @@
 
 package com.vmware.sample.util;
 
+import com.vmware.vim25.AlreadyExistsFaultMsg;
+import com.vmware.vim25.DuplicateNameFaultMsg;
+import com.vmware.vim25.InsufficientResourcesFaultFaultMsg;
+import com.vmware.vim25.InvalidDatastoreFaultMsg;
+import com.vmware.vim25.InvalidNameFaultMsg;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
+import com.vmware.vim25.InvalidStateFaultMsg;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
+import com.vmware.vim25.VmConfigFaultFaultMsg;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,7 +49,9 @@ public class SensitiveExceptionUtils {
         ConcurrentModificationException.class, InsufficientResourcesException.class, MissingResourceException.class,
         JarException.class, NotOwnerException.class, OutOfMemoryError.class, StackOverflowError.class,
         InterruptedException.class, IOException.class, RuntimeFaultFaultMsg.class, InvalidPropertyFaultMsg.class,
-        NoSuchAlgorithmException.class, KeyManagementException.class, Exception.class
+        NoSuchAlgorithmException.class, KeyManagementException.class, Exception.class, AlreadyExistsFaultMsg.class,
+        DuplicateNameFaultMsg.class, InsufficientResourcesFaultFaultMsg.class, InvalidDatastoreFaultMsg.class,
+        VmConfigFaultFaultMsg.class, InvalidNameFaultMsg.class, InvalidStateFaultMsg.class
     };
 
     private SensitiveExceptionUtils() {
@@ -78,7 +87,7 @@ public class SensitiveExceptionUtils {
                 }
             }
         }
-        return null;
+        return new Throwable();
     }
 }
 

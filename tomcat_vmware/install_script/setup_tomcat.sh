@@ -24,7 +24,7 @@ crontab_file=/etc/cron.d/FusionCube
 base_dir=`grep "install_path" ${install_cur_dir}/conf/install.conf |awk -F= '{print $2}'`
 cps_installdir="${base_dir}/cps-monitor"
 reg_command_file="${cps_installdir}/cps_monitor/reg_monitor_cli.py"
-logrotate_file=/etc/logrotate.d/logrotate_all
+logrotate_file=/etc/logrotate.d/logrotate_vmware
 logrotate_path=/var/log/plugin/${vmware_name}
 source ${current_dir}/utils.sh
 
@@ -195,7 +195,7 @@ function change_keystore_password()
        log_error "Get keystore password fail." 
        exit 1
     fi
-    local de_pass=`python -c "import kmc.kmc;print(kmc.kmc.API().decrypt(0, '${en_pass}'))"`
+    local de_pass=`python -c "import kmc.kmc;import os;os.environ['KMC_DATA_USER']='vmware';print(kmc.kmc.API().decrypt(0, '${en_pass}'))"`
     if [[ $? -ne 0 ]]; then
        log_error "Decrypt keystore password fail." 
        exit 1
@@ -266,7 +266,7 @@ function installTomcat()
 {
     cd ${current_dir}
     cp -r ${install_temp_dir}/tomcat/* ${install_dir}/
-    cp ${install_dir}/lib/commons-codec-1.14.jar ${main_dire}/sbin/
+    cp ${install_dir}/lib/commons-codec-*.jar ${main_dire}/sbin/
     cp ${install_dir}/lib/Http11Protocol.jar ${main_dire}/sbin/
     chmod 500 ${main_dire}/sbin/*
     chown root:root -R ${main_dire}/sbin
@@ -402,26 +402,54 @@ function add_cps() {
     fi
 }
 
-function log_config(){
-grep '/var/log/plugin/*.log' ${logrotate_file} >> /var/log/plugin/install_${vmware_name}.log 2>&1
+function log_config()
+{
+if [[ ! -f ${logrotate_file} ]]; then
+    touch ${logrotate_file}
+    chown -h vmware:robogrp ${logrotate_file}
+    chmod 600 ${logrotate_file}
+fi
+local crontable_file=/etc/cron.d/FusionCube
+grep logrotate_vmware ${logrotate_file} >> /dev/bull 2>&1
 if [[ $? -ne 0 ]]; then
+    echo "*/10 * * * *  vmware /usr/sbin/logrotate ${logrotate_file} -s /home/vmware/logrotate.status && rm -f /home/vmware/logrotate.status" >> ${crontable_file}
+fi
+grep '/var/log/plugin/\*\.log' ${logrotate_file} >> /var/log/plugin/install_${vmware_name}.log 2>&1
+if [[ $? -eq 0 ]]; then
     cat << EOF >> ${logrotate_file}
-${logrotate_path}/* {
+${logrotate_path}/*.log {
     missingok
     rotate 10
     compress
-    size=10M
+    size=100M
     copytruncate
     create 0640 vmware robogrp
+}
+${logrotate_path}/*.out {
+    missingok
+    rotate 10
+    compress
+    size=100M
+    copytruncate
+    create 0640 vmware robogrp
+
 }
 EOF
 else
     cat << EOF >> ${logrotate_file}
-${logrotate_path}/* {
+${logrotate_path}/*.log {
     missingok
     rotate 10
     compress
-    size=10M
+    size=100M
+    copytruncate
+    create 0640 vmware robogrp
+}
+${logrotate_path}/*.out {
+    missingok
+    rotate 10
+    compress
+    size=100M
     copytruncate
     create 0640 vmware robogrp
 }
@@ -429,7 +457,7 @@ ${logrotate_path}/* {
     missingok
     rotate 10
     compress
-    size=10M
+    size=100M
     copytruncate
     create 0640 vmware robogrp
 }

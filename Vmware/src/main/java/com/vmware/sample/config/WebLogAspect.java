@@ -38,7 +38,8 @@ public class WebLogAspect {
         + "&& !execution(* com.vmware.sample.controller.impl.VMwareController.add(..))"
         + "&& !execution(* com.vmware.sample.controller.VMController.getVmVNCByVmId(..))", argNames = "joinPoint")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
-        log.info("Request method {}", joinPoint.getSignature().getDeclaringType() + "#" + joinPoint.getSignature().getName());
+        log.info("Request method {}",
+            joinPoint.getSignature().getDeclaringType() + "#" + joinPoint.getSignature().getName());
         LocalDateTime startDateTime = LocalDateTime.now();
         Object proceed = joinPoint.proceed();
         LocalDateTime endDateTime = LocalDateTime.now();

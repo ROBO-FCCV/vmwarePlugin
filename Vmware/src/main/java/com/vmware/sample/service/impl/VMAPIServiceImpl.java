@@ -290,6 +290,9 @@ public class VMAPIServiceImpl implements VMService {
                 backingSpec.setIsoFile(cdromInfo.getIsoFile());
             } else if ("HOST_DEVICE".equals(cdromInfo.getDeviceType())) {
                 backingSpec.setHostDevice(cdromInfo.getHostDevice());
+            } else {
+                backingSpec.setIsoFile(null);
+                backingSpec.setHostDevice(null);
             }
             backingSpec.setDeviceAccessType(CdromTypes.DeviceAccessType.valueOf(cdromInfo.getAccessType()));
             cdromSpec.setBacking(backingSpec);

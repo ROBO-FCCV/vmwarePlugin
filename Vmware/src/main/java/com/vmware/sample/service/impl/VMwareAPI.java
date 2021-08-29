@@ -66,17 +66,13 @@ public class VMwareAPI extends AbstractVMware {
                 vMware.getUsername(), vMware.getPassword());
             // Creating Stub Configurations Using Security Contexts
             StubConfiguration stubConfig = new StubConfiguration(securityContext);
-
             // Creating a Session Using Stub Configuration
             Session stubSession = this.stubFactory.createStub(Session.class, stubConfig);
             // 新建会话
             char[] sessionId = stubSession.create();
-
-            // New Session
             SessionSecurityContext sessionSecurityContext = new SessionSecurityContext(sessionId);
             // Add the security session to the stub configuration.
             stubConfig.setSecurityContext(sessionSecurityContext);
-
             // Use the authenticated stub configuration to set the session of the current object.
             this.session = this.stubFactory.createStub(Session.class, stubConfig);
             this.stubConfiguration = stubConfig;

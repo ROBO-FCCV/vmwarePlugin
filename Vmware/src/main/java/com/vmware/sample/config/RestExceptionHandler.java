@@ -7,7 +7,6 @@ package com.vmware.sample.config;
 import com.vmware.sample.enums.RestCodeEnum;
 import com.vmware.sample.exception.PluginException;
 import com.vmware.sample.model.RestResult;
-
 import com.vmware.sample.util.SensitiveExceptionUtils;
 
 import lombok.extern.slf4j.Slf4j;

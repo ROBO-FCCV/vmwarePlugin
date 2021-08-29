@@ -132,11 +132,6 @@ public class VMConstants {
     public final String TEMPLATE = "template";
 
     /**
-     * vnc password
-     */
-    public final String VNC_PWD = "remoteDisplay.vnc.password";
-
-    /**
      * Datastore
      */
     public final String DATASTORE = "Datastore";

@@ -186,9 +186,12 @@ public class VMSDKServiceImpl implements VMService {
         vInfo.setVmId(objectReference.getValue());
         vInfo.setTemplate(
             jsonNode.path(VMConstants.SUMMARY).path(VMConstants.CONFIG).path(VMConstants.TEMPLATE).asBoolean());
-        Object virtualMachineConfigInfo = collect.get(VMConstants.CONFIG);
-        vInfo.setVnc(isUseVnc(virtualMachineConfigInfo));
-        setDiskAndNetworks(vInfo, virtualMachineConfigInfo);
+        if (collect.get(VMConstants.CONFIG) instanceof VirtualMachineConfigInfo) {
+            VirtualMachineConfigInfo virtualMachineConfigInfo = (VirtualMachineConfigInfo) collect.get(
+                VMConstants.CONFIG);
+            vInfo.setVnc(isUseVnc(virtualMachineConfigInfo));
+            setDiskAndNetworks(vInfo, virtualMachineConfigInfo);
+        }
         vInfo.setVmName(jsonNode.path(VMConstants.NAME).asText());
         vInfo.setStatus(jsonNode.path(VMConstants.OVERALL_STATE).asText());
         vInfo.setPowerStatus(jsonNode.path(VMConstants.RUNTIME).path(VMConstants.POWER_STATE).asText());
@@ -214,8 +217,11 @@ public class VMSDKServiceImpl implements VMService {
         if (!collect.containsKey(VMConstants.RESOURCE_POOL)) {
             return vInfo;
         }
-        ManagedObjectReference resource = (ManagedObjectReference) collect.get(VMConstants.RESOURCE_POOL);
-        getCluster(sdkInstance, resource, vInfo);
+        if (collect.get(VMConstants.RESOURCE_POOL) instanceof ManagedObjectReference) {
+            ManagedObjectReference resource = (ManagedObjectReference) collect.get(VMConstants.RESOURCE_POOL);
+            getCluster(sdkInstance, resource, vInfo);
+        }
+
         return vInfo;
     }
 
@@ -223,41 +229,41 @@ public class VMSDKServiceImpl implements VMService {
         List<String> properties = new ArrayList<>();
         properties.add("parent");
         List<ObjectContent> contents = vmwareSDKClient.retrieveProperties(sdkInstance, resource, properties);
-        ManagedObjectReference mor = (ManagedObjectReference) contents.get(0).getPropSet().get(0).getVal();
-        vInfo.setClusterId(mor.getValue());
-        if (StringUtils.contains(mor.getValue(), "domain-s")) {
-            return;
-        } else {
-            String clusterName = getObjName(sdkInstance, mor.getValue(), VMConstants.CLUSTER_COMPUTE_RESOURCE);
-            vInfo.setClusterName(clusterName);
+        if ((contents.get(0).getPropSet().get(0).getVal()) instanceof ManagedObjectReference) {
+            ManagedObjectReference mor = (ManagedObjectReference) contents.get(0).getPropSet().get(0).getVal();
+            vInfo.setClusterId(mor.getValue());
+            if (StringUtils.contains(mor.getValue(), "domain-s")) {
+                return;
+            } else {
+                String clusterName = getObjName(sdkInstance, mor.getValue(), VMConstants.CLUSTER_COMPUTE_RESOURCE);
+                vInfo.setClusterName(clusterName);
+            }
         }
     }
 
-    private void setDiskAndNetworks(VirtualMachineInfo vInfo, Object virtualMachineConfigInfo) {
+    private void setDiskAndNetworks(VirtualMachineInfo vInfo, VirtualMachineConfigInfo virtualMachineConfigInfo) {
         List<DiskToInfo> diskList = new ArrayList<>();
         List<NetworkBasic> networkBasics = new ArrayList<>();
-        if (virtualMachineConfigInfo instanceof VirtualMachineConfigInfo) {
-            VirtualHardware virtualHardware = ((VirtualMachineConfigInfo) virtualMachineConfigInfo).getHardware();
-            List<VirtualDevice> virtualDeviceList = virtualHardware.getDevice();
-            for (VirtualDevice vd : virtualDeviceList) {
-                if (vd instanceof VirtualDisk) {
-                    DiskToInfo disk = new DiskToInfo();
-                    Description description = vd.getDeviceInfo();
-                    String diskName = description.getLabel();
-                    disk.setDiskName(diskName);
-                    Long diskSize = ((VirtualDisk) vd).getCapacityInBytes();
-                    disk.setDiskSize(diskSize);
-                    setDiskMap(vd, disk);
-                    diskList.add(disk);
-                }
-                if (vd instanceof VirtualEthernetCard) {
-                    NetworkBasic networkBasic = new NetworkBasic();
-                    VirtualEthernetCard virtualEthernetCard = (VirtualEthernetCard) vd;
-                    networkBasic.setName(virtualEthernetCard.getDeviceInfo().getSummary());
-                    networkBasic.setType(virtualEthernetCard.getClass().getSimpleName());
-                    networkBasic.setConnected(virtualEthernetCard.getConnectable().isConnected());
-                    networkBasics.add(networkBasic);
-                }
+        VirtualHardware virtualHardware = virtualMachineConfigInfo.getHardware();
+        List<VirtualDevice> virtualDeviceList = virtualHardware.getDevice();
+        for (VirtualDevice vd : virtualDeviceList) {
+            if (vd instanceof VirtualDisk) {
+                DiskToInfo disk = new DiskToInfo();
+                Description description = vd.getDeviceInfo();
+                String diskName = description.getLabel();
+                disk.setDiskName(diskName);
+                Long diskSize = ((VirtualDisk) vd).getCapacityInBytes();
+                disk.setDiskSize(diskSize);
+                setDiskMap(vd, disk);
+                diskList.add(disk);
+            }
+            if (vd instanceof VirtualEthernetCard) {
+                NetworkBasic networkBasic = new NetworkBasic();
+                VirtualEthernetCard virtualEthernetCard = (VirtualEthernetCard) vd;
+                networkBasic.setName(virtualEthernetCard.getDeviceInfo().getSummary());
+                networkBasic.setType(virtualEthernetCard.getClass().getSimpleName());
+                networkBasic.setConnected(virtualEthernetCard.getConnectable().isConnected());
+                networkBasics.add(networkBasic);
             }
         }
         vInfo.setDisks(diskList);
@@ -270,12 +276,10 @@ public class VMSDKServiceImpl implements VMService {
      * @param virtualMachineConfigInfo virtual Machine Config info
      * @return true or false
      */
-    private boolean isUseVnc(Object virtualMachineConfigInfo) {
-        if (virtualMachineConfigInfo instanceof VirtualMachineConfigInfo) {
-            for (OptionValue option : ((VirtualMachineConfigInfo) virtualMachineConfigInfo).getExtraConfig()) {
-                if (VMConstants.VNC_ENABLED.equals(option.getKey())) {
-                    return true;
-                }
+    private boolean isUseVnc(VirtualMachineConfigInfo virtualMachineConfigInfo) {
+        for (OptionValue option : virtualMachineConfigInfo.getExtraConfig()) {
+            if (VMConstants.VNC_ENABLED.equals(option.getKey())) {
+                return true;
             }
         }
         return false;
@@ -540,7 +544,8 @@ public class VMSDKServiceImpl implements VMService {
     @Override
     public List<GuestOsDescriptor> getGuestSystems(String vmwareId, String clusterId, String hostId) {
         VMwareSDK vMwareSDK = vmwareSDKClient.getSDKInstance(vmwareId);
-        if (StringUtils.isBlank(clusterId)) {
+        String clusterIdNew = clusterId;
+        if (StringUtils.isBlank(clusterIdNew)) {
             List<ObjectContent> retrieveProperties = vmwareSDKClient.retrieveProperties(vMwareSDK,
                 ManagedObjectReferenceBuilder.getInstance().type(VMwareConstants.HOST_SYSTEM).value(hostId).build(),
                 Collections.singletonList("parent"));
@@ -548,9 +553,9 @@ public class VMSDKServiceImpl implements VMService {
                 .getPropSet()
                 .get(0)
                 .getVal());
-            clusterId = cluster.getValue();
+            clusterIdNew = cluster.getValue();
         }
-        ManagedObjectReference environmentBrowser = getResourcePool(vMwareSDK, clusterId, "environmentBrowser");
+        ManagedObjectReference environmentBrowser = getResourcePool(vMwareSDK, clusterIdNew, "environmentBrowser");
         ManagedObjectReference hostMor = StringUtils.isNotBlank(hostId) ? ManagedObjectReferenceBuilder.getInstance()
             .type(VMConstants.HOST_SYSTEM)
             .value(hostId)
@@ -793,13 +798,7 @@ public class VMSDKServiceImpl implements VMService {
             vmVNCStatusInfo.setVncPort(String.valueOf(virtualMachineTicket.getPort()));
             vmVNCStatusInfo.setVncHost(virtualMachineTicket.getHost());
             vmVNCStatusInfo.setVncEnabled(false);
-            Iterator<JsonNode> node = jsonNode.path(VMConstants.CONFIG).path("extraConfig").elements();
-            while (node.hasNext()) {
-                JsonNode optionValue = node.next();
-                if (VMConstants.VNC_PWD.equals(optionValue.path("key").asText())) {
-                    vmVNCStatusInfo.setVncPassword(optionValue.path("value").asText());
-                }
-            }
+            vmVNCStatusInfo.setVncPassword(virtualMachineTicket.getTicket());
             return vmVNCStatusInfo;
         } catch (JsonProcessingException | InvalidStateFaultMsg | RuntimeFaultFaultMsg e) {
             log.error("JsonProcessingException", SensitiveExceptionUtils.hideSensitiveInfo(e));
@@ -812,7 +811,7 @@ public class VMSDKServiceImpl implements VMService {
         hostSystem.setType(VMConstants.HOST_SYSTEM);
         hostSystem.setValue(hostId);
         if (StringUtils.containsAny(clusterId, "domain-s")) {
-            return StringUtils.isNotBlank(hostId) ? hostSystem : null;
+            return StringUtils.isNotBlank(hostId) ? hostSystem : new ManagedObjectReference();
         }
         ManagedObjectReference managedObjectReference = ManagedObjectReferenceBuilder.getInstance()
             .type(VMwareConstants.CLUSTER_COMPUTE_RESOURCE)
@@ -838,7 +837,7 @@ public class VMSDKServiceImpl implements VMService {
                 throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
             }
         }
-        return StringUtils.isNotBlank(hostId) ? hostSystem : null;
+        return StringUtils.isNotBlank(hostId) ? hostSystem : new ManagedObjectReference();
     }
 
     @Override
@@ -847,11 +846,48 @@ public class VMSDKServiceImpl implements VMService {
         processingParam(vMwareSDK, vmConfigInfo);
         ManagedObjectReference hostSystem = getHostMor(vMwareSDK, vmConfigInfo.getClusterId(),
             vmConfigInfo.getHostId());
+        if (StringUtils.isBlank(hostSystem.getValue())) {
+            hostSystem = null;
+        }
         if (checkHardWare(vMwareSDK, vmConfigInfo, hostSystem)) {
             throw new PluginException(RestCodeEnum.ILLEGAL_INPUT_PARAMS_ERROR);
         }
         ManagedObjectReference vmFolderRef = getMor(vMwareSDK, VMConstants.DATACENTER, vmConfigInfo.getDataCenterId(),
             VMConstants.VM_FOLDER);
+        VirtualMachineConfigSpec vmConfigSpec = getVirtualMachineConfigSpec(vmConfigInfo, vMwareSDK);
+        ManagedObjectReference resourceRef = getResourcePool(vMwareSDK, vmConfigInfo.getClusterId(),
+            VMConstants.RESOURCE_POOL);
+        try {
+            ManagedObjectReference taskMor = vMwareSDK.getVimPort()
+                .createVMTask(vmFolderRef, vmConfigSpec, resourceRef, hostSystem);
+            getTaskState(taskMor, vmwareId);
+            return taskMor.getValue();
+        } catch (AlreadyExistsFaultMsg e) {
+            log.error("AlreadyExistsFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (DuplicateNameFaultMsg e) {
+            log.error("DuplicateNameFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (FileFaultFaultMsg e) {
+            log.error("FileFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (InsufficientResourcesFaultFaultMsg e) {
+            log.error("InsufficientResourcesFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (InvalidDatastoreFaultMsg e) {
+            log.error("InvalidDatastoreFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (InvalidNameFaultMsg e) {
+            log.error("InvalidNameFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (InvalidStateFaultMsg e) {
+            log.error("InvalidStateFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (OutOfBoundsFaultMsg e) {
+            log.error("OutOfBoundsFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (RuntimeFaultFaultMsg e) {
+            log.error("RuntimeFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        } catch (VmConfigFaultFaultMsg e) {
+            log.error("VmConfigFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
+        }
+        throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
+    }
+
+    private VirtualMachineConfigSpec getVirtualMachineConfigSpec(VmConfigurationInfo vmConfigInfo,
+        VMwareSDK vMwareSDK) {
         VirtualMachineConfigSpec vmConfigSpec = new VirtualMachineConfigSpec();
         String vmName = StringUtils.replace(vmConfigInfo.getVmName(), "%", "%25");
         vmConfigSpec.setName(vmName);
@@ -871,17 +907,7 @@ public class VMSDKServiceImpl implements VMService {
             vmConfigSpec.getDeviceChange().addAll(getRDMs(0, vmConfigInfo.getRdms(), dataStore[0]));
         }
         vmConfigSpec.setFiles(getVmFileInfo(vmName, dataStore[0]));
-        ManagedObjectReference resourceRef = getResourcePool(vMwareSDK, vmConfigInfo.getClusterId(),
-            VMConstants.RESOURCE_POOL);
-        try {
-            ManagedObjectReference taskMor = vMwareSDK.getVimPort()
-                .createVMTask(vmFolderRef, vmConfigSpec, resourceRef, hostSystem);
-            getTaskState(taskMor, vmwareId);
-            return taskMor.getValue();
-        } catch (AlreadyExistsFaultMsg | DuplicateNameFaultMsg | FileFaultFaultMsg | InsufficientResourcesFaultFaultMsg | InvalidDatastoreFaultMsg | InvalidStateFaultMsg | OutOfBoundsFaultMsg | RuntimeFaultFaultMsg | InvalidNameFaultMsg | VmConfigFaultFaultMsg e) {
-            log.error("VmConfigFaultFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
-        }
-        throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
+        return vmConfigSpec;
     }
 
     /**
@@ -909,19 +935,23 @@ public class VMSDKServiceImpl implements VMService {
                     .type(VMwareConstants.COMPUTE_RESOURCE)
                     .value(vmConfigInfo.getClusterId())
                     .build(), Collections.singletonList("parent"));
-            ManagedObjectReference folder = (ManagedObjectReference) (retrieveProperties.get(0)
-                .getPropSet()
-                .get(0)
-                .getVal());
-            String groupFolder = folder.getValue();
-            List<ObjectContent> retrieveProp = vmwareSDKClient.retrieveProperties(vMwareSDK,
-                ManagedObjectReferenceBuilder.getInstance().type(VMwareConstants.FOLDER).value(groupFolder).build(),
-                Collections.singletonList("parent"));
-            ManagedObjectReference dataCenter = (ManagedObjectReference) (retrieveProp.get(0)
-                .getPropSet()
-                .get(0)
-                .getVal());
-            vmConfigInfo.setDataCenterId(dataCenter.getValue());
+            if ((retrieveProperties.get(0).getPropSet().get(0).getVal()) instanceof ManagedObjectReference) {
+                ManagedObjectReference folder = (ManagedObjectReference) (retrieveProperties.get(0)
+                    .getPropSet()
+                    .get(0)
+                    .getVal());
+                String groupFolder = folder.getValue();
+                List<ObjectContent> retrieveProp = vmwareSDKClient.retrieveProperties(vMwareSDK,
+                    ManagedObjectReferenceBuilder.getInstance().type(VMwareConstants.FOLDER).value(groupFolder).build(),
+                    Collections.singletonList("parent"));
+                if ((retrieveProp.get(0).getPropSet().get(0).getVal()) instanceof ManagedObjectReference) {
+                    ManagedObjectReference dataCenter = (ManagedObjectReference) (retrieveProp.get(0)
+                        .getPropSet()
+                        .get(0)
+                        .getVal());
+                    vmConfigInfo.setDataCenterId(dataCenter.getValue());
+                }
+            }
         }
     }
 
@@ -939,9 +969,10 @@ public class VMSDKServiceImpl implements VMService {
                     flag = false;
                     ManagedObjectReference vmMor = (ManagedObjectReference) task.getResult();
                     powerStartByVmId(vmwareId, vmMor.getValue());
-
                 } else if (StringUtils.equalsIgnoreCase(TaskInfoState.ERROR.value(), createStatus)) {
                     throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
+                } else {
+                    flag = false;
                 }
             }
         }
@@ -1019,6 +1050,9 @@ public class VMSDKServiceImpl implements VMService {
         processingParam(vMwareSDK, vmTemplateInfo);
         ManagedObjectReference hostSystem = getHostMor(vMwareSDK, vmTemplateInfo.getClusterId(),
             vmTemplateInfo.getHostId());
+        if (StringUtils.isBlank(hostSystem.getValue())) {
+            hostSystem = null;
+        }
         if (checkHardWare(vMwareSDK, vmTemplateInfo, hostSystem)) {
             throw new PluginException(RestCodeEnum.ILLEGAL_INPUT_PARAMS_ERROR);
         }
@@ -1042,9 +1076,8 @@ public class VMSDKServiceImpl implements VMService {
                 }
             }
         }
+        VirtualMachineCloneSpec virtualMachineCloneSpec = getVmCloneSpec(vMwareSDK, index, vmTemplateInfo, dataStore);
         try {
-            VirtualMachineCloneSpec virtualMachineCloneSpec = getVmCloneSpec(vMwareSDK, index, vmTemplateInfo,
-                dataStore);
             ManagedObjectReference taskMor = vMwareSDK.getVimPort()
                 .cloneVMTask(vmMor, vmFolderRef, vmName, virtualMachineCloneSpec);
             return taskMor.getValue();
@@ -1091,15 +1124,14 @@ public class VMSDKServiceImpl implements VMService {
             VMConstants.RESOURCE_POOL);
         location.setPool(resourceRef);
         virtualMachineCloneSpec.setLocation(location);
-        VirtualMachineConfigSpec config = new VirtualMachineConfigSpec();
         ToolsConfigInfo info = new ToolsConfigInfo();
         info.setAfterPowerOn(true);
         info.setAfterResume(true);
         info.setBeforeGuestStandby(false);
         info.setBeforeGuestReboot(true);
         info.setBeforeGuestShutdown(true);
+        VirtualMachineConfigSpec config = new VirtualMachineConfigSpec();
         config.setTools(info);
-
         config.setNumCPUs(vmTemplateInfo.getCpuInfo().getCount());
         config.setMemoryMB(vmTemplateInfo.getMemorySize());
         config.setNumCoresPerSocket(vmTemplateInfo.getCpuInfo().getCoreSockets());
@@ -1151,7 +1183,6 @@ public class VMSDKServiceImpl implements VMService {
             CustomizationPassword customizationPassword = new CustomizationPassword();
             customizationPassword.setPlainText(true);
             customizationPassword.setValue(vmTemplateInfo.getOsPassword());
-
             CustomizationGuiUnattended guiUnattended = new CustomizationGuiUnattended();
             guiUnattended.setPassword(customizationPassword);
             guiUnattended.setAutoLogon(false);
@@ -1159,7 +1190,6 @@ public class VMSDKServiceImpl implements VMService {
             guiUnattended.setAutoLogonCount(0);
             CustomizationFixedName fixedName = new CustomizationFixedName();
             fixedName.setName(hostName(vmTemplateInfo.getVmName()));
-
             if ("WINDOWS".equalsIgnoreCase(vmTemplateInfo.getOsType())) {
                 log.info("windows enter...");
                 CustomizationUserData userdata = new CustomizationUserData();
@@ -1167,16 +1197,13 @@ public class VMSDKServiceImpl implements VMService {
                 userdata.setFullName(vmTemplateInfo.getVmName());
                 userdata.setOrgName("LocalDomain");
                 userdata.setProductId("");
-
                 CustomizationIdentification identification = new CustomizationIdentification();
                 identification.setJoinWorkgroup("WORKGROUP");
                 identification.setDomainAdminPassword(customizationPassword);
-
                 CustomizationSysprep identitySettings = new CustomizationSysprep();
                 identitySettings.setGuiUnattended(guiUnattended);
                 identitySettings.setUserData(userdata);
                 identitySettings.setIdentification(identification);
-
                 CustomizationLicenseFilePrintData licenseFilePrintData = new CustomizationLicenseFilePrintData();
                 licenseFilePrintData.setAutoUsers(5);
                 licenseFilePrintData.setAutoMode(CustomizationLicenseDataMode.PER_SERVER);
@@ -1194,7 +1221,6 @@ public class VMSDKServiceImpl implements VMService {
     }
 
     private CustomizationAdapterMapping addAdapter(Network network) {
-        CustomizationAdapterMapping map3 = new CustomizationAdapterMapping();
         CustomizationIPSettings adapter3 = new CustomizationIPSettings();
         CustomizationFixedIp ip3 = new CustomizationFixedIp();
         ip3.setIpAddress(network.getIpAddress());
@@ -1202,6 +1228,7 @@ public class VMSDKServiceImpl implements VMService {
         adapter3.setDnsDomain("localdomain");
         adapter3.setSubnetMask(network.getNetmask());
         adapter3.getGateway().add(network.getGateway());
+        CustomizationAdapterMapping map3 = new CustomizationAdapterMapping();
         map3.setAdapter(adapter3);
         return map3;
     }
@@ -1250,9 +1277,15 @@ public class VMSDKServiceImpl implements VMService {
 
     private List<VirtualDeviceConfigSpec> getDisks(int index, List<DiskInfo> disks, String[] dataStore, String vmName) {
         List<VirtualDeviceConfigSpec> virtualDeviceConfigSpecList = new ArrayList<>();
-        long memory = 0L;
         if (!CollectionUtils.isEmpty(disks)) {
+            long memory = 0L;
             for (int i = 0; i < disks.size(); i++) {
+                VirtualDisk virtualDisk = new VirtualDisk();
+                virtualDisk.setCapacityInKB(DataSize.ofBytes(disks.get(i).getMemory()).toKilobytes());
+                memory += virtualDisk.getCapacityInKB();
+                if (memory > Long.valueOf(dataStore[1])) {
+                    throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
+                }
                 VirtualDeviceConfigSpec virtualDeviceConfigSpecDisk = new VirtualDeviceConfigSpec();
                 virtualDeviceConfigSpecDisk.setOperation(VirtualDeviceConfigSpecOperation.ADD);
                 virtualDeviceConfigSpecDisk.setFileOperation(VirtualDeviceConfigSpecFileOperation.CREATE);
@@ -1262,12 +1295,7 @@ public class VMSDKServiceImpl implements VMService {
                 String fileName = String.format(Locale.ROOT, "[%s]%s%s%s-%s.vmdk", dataStore[0], vmName, File.separator,
                     vmName, i);
                 virtualDiskFlatVer2BackingInfo.setFileName(fileName);
-                VirtualDisk virtualDisk = new VirtualDisk();
-                virtualDisk.setCapacityInKB(DataSize.ofBytes(disks.get(i).getMemory()).toKilobytes());
-                memory += virtualDisk.getCapacityInKB();
-                if (memory > Long.valueOf(dataStore[1])) {
-                    throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
-                }
+
                 virtualDisk.setUnitNumber(index + i);
                 virtualDisk.setControllerKey(VMConstants.VIRTUAL_SSSI_CONTROLLER_KEY);
                 virtualDisk.setBacking(virtualDiskFlatVer2BackingInfo);

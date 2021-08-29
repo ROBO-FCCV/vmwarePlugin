@@ -4,6 +4,7 @@
 
 package cc.plugin;
 
+import com.vmware.sample.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -39,8 +40,8 @@ public class DebugSpringApplication extends SpringBootServletInitializer {
             for (BeanDefinition bean : candidates) {
 
                 MultiValueMap<String, Object> annotation
-                    = (((ScannedGenericBeanDefinition) bean).getMetadata()).getAllAnnotationAttributes(
-                    "org.springframework.boot.autoconfigure.SpringBootApplication");
+                        = (((ScannedGenericBeanDefinition) bean).getMetadata()).getAllAnnotationAttributes(
+                        "org.springframework.boot.autoconfigure.SpringBootApplication");
                 if (null != annotation) {
                     applicationClass = bean.getBeanClassName();
                     continue;
@@ -53,7 +54,7 @@ public class DebugSpringApplication extends SpringBootServletInitializer {
             SpringApplication application = new SpringApplication(Class.forName(applicationClass));
             if (!contextClass.equals("")) {
                 application.addInitializers(
-                    (ApplicationContextInitializer<?>) Class.forName(contextClass).newInstance());
+                        (ApplicationContextInitializer<?>) Class.forName(contextClass).newInstance());
             }
             application.addInitializers(new ContextInitializer());
             application.run(args);

@@ -73,7 +73,7 @@ PATH=<maven-bin-dir>
 
 **步骤2** 解压软件包，获取**lib**下jar文件。获取的jar文件如下：
 
-- nsx-java-sdk-2.5.1.0.1.15419398.jar
+- nsx-java-sdk-2.5.1.0.5.16221899.jar
 - nsx-policy-java-sdk-2.5.1.0.1.15419398.jar
 - nsx-vmc-aws-integration-java-sdk-2.5.1.0.1.15419398.jar
 - nsx-vmc-policy-java-sdk-2.5.1.0.1.15419398.jar
@@ -90,6 +90,11 @@ PATH=<maven-bin-dir>
 - vsphereautomation-client-sdk-3.3.0.jar
 - vsphereautomation-lookupservice-1.0.0.jar
 
+**步骤3** 下载KMC
+然后到FCV pro环境将任何一个tomcat目录下的服务的lib目录下的KMC包也下载到lib目录中
+
+/ROBO安装目录/tomcat_1/webapps/dfxmgt/WEB-INF/lib/com.huawei.kmc-jni-java-3.0.0.SPC005.B002-RELEASE.jar
+
 ## 编译并打包
 
 **步骤1** 解压Vmware-provider软件包。
@@ -100,7 +105,7 @@ PATH=<maven-bin-dir>
 
 ![](image/2.png)
 
-**步骤3** 将获取的jar文件复制到**lib**目录下。
+**步骤3** 将获取的[jar文件](#jar) 复制到**lib**目录下。
 
 **步骤4** 进入**Vmware**目录下，执行maven命令,编译并打包。命令如下：
 

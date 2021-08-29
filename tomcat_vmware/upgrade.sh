@@ -182,12 +182,16 @@ function copy_data() {
         version_file=$(find ${backup_path} -name version.yml | tail -1)
     fi
     old_version=`awk '{print $2}' ${version_file}`
-    # 当待升级版本为1.3时，需要将旧tomcat的配置文件更新为新的tomcat配置文件
+    # 当待升级插件版本为1.3（不包含1.3,1.3已经处理过）之前时，需要将旧tomcat的配置文件更新为新的tomcat配置文件
     current_version=`awk '{print $2}' ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/version.yml`
+    # expr 命令current_version > 1.3时，返回值为1，否则为0
+    if [[ `expr ${current_version} \> 1.3` -eq 1 ]] && [[ `expr ${old_version} \>\= 1.3` -eq 1 ]];then
+        cp -rfp ${backup_path}/$1/tomcat/webapps/vmware/WEB-INF/classes/user.yml ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes >> /dev/null 2>&1
+        return
+    fi
     if [[ ! -f ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak ]]; then
          cp -rfp ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml  ${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak
     fi
-    sed -i "s#ORGANIZATION#${object_name}#g" ${current_dir}/install_script/yaml_upgrade.py
     python ${current_dir}/install_script/yaml_upgrade.py "${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/vmware.yml_bak" "${old_dir}/$1/tomcat/webapps/vmware/WEB-INF/classes/login.yml" "/opt/${object_name}/robo/sbin/"
     if [[ $? -ne 0 ]]; then
         writeInfo "Failed to convert data."
@@ -227,7 +231,7 @@ function upgrade() {
     writeInfo "Start check update"
     check_update
     writeInfo "Finish check update"
-    if [[ -f ${old_dir}/vmware_information_tool.sh ]];then
+    if [[ -f ${old_dir}/vmware_information_tool.sh || -f ${old_dir}/vmware_info_tool.sh ]];then
         version_file=$(find ${old_dir} -name version.yml | tail -1)
     else
         version_file=$(find ${backup_path} -name version.yml | tail -1)

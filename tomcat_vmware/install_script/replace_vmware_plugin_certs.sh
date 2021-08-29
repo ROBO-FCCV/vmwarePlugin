@@ -45,7 +45,7 @@ function change_keystore_password()
        log_error "Get keystore password fail."
        exit 1
     fi
-    local de_pass=`python -c "import kmc.kmc;print(kmc.kmc.API().decrypt(0, '${en_pass}'))"`
+    local de_pass=`python -c "import kmc.kmc;import os;os.environ['KMC_DATA_USER']='vmware';print(kmc.kmc.API().decrypt(0, '${en_pass}'))"`
     if [[ $? -ne 0 ]]; then
        log_error "Decrypt keystore password fail."
        exit 1
@@ -53,7 +53,7 @@ function change_keystore_password()
     log_info "Decrypt keystore password successfully."
     rm -f ${current_dir}/temp_pass.info
     expect > ${current_dir}/temp_pass.info << EOF
-spawn java -classpath ${install_dir}/sbin/commons-codec-1.14.jar:${install_dir}/sbin/Http11Protocol.jar com.object_name.scbb.tomcat.http11.KeyMgr
+spawn java -classpath ${install_dir}/sbin/commons-codec-1.15.jar:${install_dir}/sbin/Http11Protocol.jar com.object_name.scbb.tomcat.http11.KeyMgr
 expect {
 "keyStorePass:" {send "${de_pass}\r";exp_continue}
 }

@@ -36,7 +36,7 @@ public enum RestCodeEnum {
     RESET_VM_ERROR("0020", "Reset VirtualMachine error."),
     GET_VM_ERROR("0021", "Get VirtualMachine error."),
     ILLEGAL_INPUT_PARAMS_ERROR("0022", " Illegal input params."),
-    KMC_ERROR("0015", "The kmc error.");
+    KMC_ERROR("0015", "The com.huawei.kmc error.");
 
     /**
      * 错误代码

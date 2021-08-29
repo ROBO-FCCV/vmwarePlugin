@@ -212,7 +212,7 @@ function stop_service()
 
 function log_unconfig()
 {
-    sed -i "/plugin\/${VMware_item}/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
+    sed -i "/plugin\/${VMware_item}/,/}/d" /etc/logrotate.d/logrotate_vmware >> /dev/null 2>&1
     sed -i "/${VMware_item}/d" ${crontab_file} >> /dev/null 2>&1
 }
 
@@ -309,8 +309,8 @@ if [[ ${para_num} -ne 0 ]];then
 
         rm -rf /opt/plugin/*
         rm -rf /var/log/plugin
-        sed -i "/plugin\/vmware_plugin_/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
-        sed -i "/\/var\/log\/plugin\/\*.log/,/}/d" /etc/logrotate.d/logrotate_all >> /dev/null 2>&1
+        sed -i "/plugin\/vmware_plugin_/,/}/d" /etc/logrotate.d/logrotate_vmware >> /dev/null 2>&1
+        sed -i "/\/var\/log\/plugin\/\*.log/,/}/d" /etc/logrotate.d/logrotate_vmware >> /dev/null 2>&1
         sed -i "/vmware_plugin_/d" ${crontab_file} >> /dev/null 2>&1
         sed -i "/\/var\/log\/plugin/d" ${crontab_file} >> /dev/null 2>&1
         echo "Uninstall plugin success."

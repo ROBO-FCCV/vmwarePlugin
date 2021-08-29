@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 @Service("vcenter-api-service")
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class VcenterAPIServiceImpl implements VcenterService {
-
     @Override
     public VcenterBasicInfo queryVcenterBasicInfo(String vmwareId) {
         throw new PluginException(RestCodeEnum.API_NONE_IMPLEMENT);

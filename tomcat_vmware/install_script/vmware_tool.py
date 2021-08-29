@@ -4,13 +4,14 @@
 
 import getpass
 import json
-import re
-from sys import argv
-import os
 import logger
+import os
+import re
 import requests
 import yaml
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from sys import argv
+
 from vmware_pass_update import UpdatePassword
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -444,7 +445,7 @@ class VmwareUser:
         """
         self.check_link()
         with open(self.vmware_yml, 'r') as load_file:
-            load_dict = yaml.load(load_file, Loader=yaml.FullLoader)
+            load_dict = yaml.safe_load(load_file)
             if load_dict is None:
                 print("---------------------------------------")
                 print("No vmware information.")

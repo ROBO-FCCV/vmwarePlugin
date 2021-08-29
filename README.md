@@ -73,7 +73,7 @@ Download the Tomcat installation package of a version later than `8.0` at [http:
 
 **Step 2** Decompress the software package to obtain the following JAR files in the **lib** directory:
 
-- nsx-java-sdk-2.5.1.0.1.15419398.jar
+- nsx-java-sdk-2.5.1.0.5.16221899.jar
 - nsx-policy-java-sdk-2.5.1.0.1.15419398.jar
 - nsx-vmc-aws-integration-java-sdk-2.5.1.0.1.15419398.jar
 - nsx-vmc-policy-java-sdk-2.5.1.0.1.15419398.jar 
@@ -90,6 +90,11 @@ Download the Tomcat installation package of a version later than `8.0` at [http:
 - vsphereautomation-client-sdk-3.3.0.jar
 - vsphereautomation-lookupservice-1.0.0.jar
 
+**步骤3** download KMC
+
+In the FCV pro environment, download the KMC package in the lib directory of any service in the Tomcat directory to the lib directory.
+
+/ROBO install path/tomcat_1/webapps/dfxmgt/WEB-INF/lib/com.huawei.kmc-jni-java-3.0.0.SPC005.B002-RELEASE.jar
 ## Compilation and Packaging
 
 **Step 1** Decompress the VMware-provider software package.
@@ -100,7 +105,7 @@ Download the Tomcat installation package of a version later than `8.0` at [http:
 
 ![](image/2.png)
 
-**Step 3** Copy the obtained jar files to the **lib** directory.
+**Step 3** Copy the obtained [jar files](#jar) to the **lib** directory.
 
 **Step 4** Go to the **Vmware** directory and run the Maven command to compile and package the code. The commands are as follows:
 

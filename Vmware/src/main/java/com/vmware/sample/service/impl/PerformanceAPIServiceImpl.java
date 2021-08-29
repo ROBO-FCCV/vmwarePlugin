@@ -27,7 +27,6 @@ import java.util.List;
 @Service("performance-api-service")
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class PerformanceAPIServiceImpl implements PerformanceService {
-
     @Override
     public List<PerformanceData> performances(String vmwareId, PerformanceReq vmPerformanceReq, String type) {
         throw new PluginException(RestCodeEnum.API_NONE_IMPLEMENT);

@@ -16,9 +16,10 @@ SUBJECT_PRE="/C=CN/ST=SiChuan/O=object_name/CN="
 LOCAL_IP=127.0.0.1
 cert_validity_days=3650
 STORE_PASSWORD=`mkpasswd -l 16 -s 0`
-CA_PASSWORD=`python -c "import kmc.kmc as K; print(K.API().decrypt(0, '$(grep ^private_key= /opt/${inner_dir}/robo/security/priv/tomcat.conf |awk -F= '{print $2}')'))"`
+
+CA_PASSWORD=`python -c "import kmc.kmc as K;import os;os.environ['KMC_DATA_USER']='tomcat'; print(K.API().decrypt(0, '$(grep ^private_key= /opt/${inner_dir}/robo/security/priv/tomcat.conf |awk -F= '{print $2}')'))"`
 export KMC_PYTHON_PLAIN_TEXT=${STORE_PASSWORD}
-ENCRYPT_KEYSTORE_PASS=`python -c "import kmc.kmc as K; print(K.API().encrypt(0))"`
+ENCRYPT_KEYSTORE_PASS=`python -c "import kmc.kmc as K;import os;os.environ['KMC_DATA_USER']='vmware'; print(K.API().encrypt(0))"`
 unset KMC_PYTHON_PLAIN_TEXT
 SUBJECT_JKS="OU=object_name,O=object_name,L=Chengdu,ST=SiChuan,C=CN"
 

@@ -21,7 +21,6 @@ import javax.validation.constraints.NotBlank;
 @Getter
 @Setter
 public class VmTemplateInfo extends VmConfigurationBasicInfo {
-
     /**
      * templateId
      */
