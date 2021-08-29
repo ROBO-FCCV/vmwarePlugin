@@ -276,6 +276,13 @@ function configur_add(){
     echo "  vmware_outport=${vmware_outport}" >> ${base_dir}/conf/vmware_information.conf
 }
 
+function clean_config(){
+    sed -i "/vmware_name=${vmware_name}/d" ${base_dir}/conf/vmware_information.conf
+    sed -i "/  vmware_getport=${vmware_getport}/d" ${base_dir}/conf/vmware_information.conf
+    sed -i "/  vmware_outport=${vmware_outport}/d" ${base_dir}/conf/vmware_information.conf
+    echo "Installing the plugin faild."
+    exit 1
+}
 function install(){
     echo "Start installing plugin"
     echo "waiting....."
@@ -288,9 +295,15 @@ function install(){
     cd ${current_dir}/temp
     source ./utils.sh
     bash ./setup_tomcat.sh
-    fn_log "setup_tomcat.sh"
+    if [[ $? -ne 0 ]];then
+        clean_config
+    fi
+    log_info "setup_tomcat.sh"
     bash ./setup_plugin.sh
-    fn_log "setup_plugin.sh"
+    if [[ $? -ne 0 ]];then
+        clean_config
+    fi
+    log_info "setup_plugin.sh"
     cd ${current_dir}
     rm -rf ${current_dir}/temp
 }
@@ -298,7 +311,10 @@ function install(){
 function check_service(){
     sleep 1
     ps -ef |grep ${vmware_name} |grep -v grep >> /dev/null 2>&1
-    fn_log "Installing the plugin"
+    if [[ $? -ne 0 ]];then
+        clean_config
+    fi
+    log_info "Installing the plugin"
     for item_time in `seq 30`;do
         curl -k -s https://127.0.0.1:${vmware_getport}/vmware/version >> /dev/null 2>&1
         if [[ $? -ne 0 ]];then
@@ -320,6 +336,8 @@ else
     install
 fi
 check_service
-fn_log "Installing the plugin"
+if [[ $? -ne 0 ]];then
+    clean_config
+fi
 echo "Installing the plugin succeeded."
 exit 0

@@ -62,4 +62,20 @@ public class Constants {
      * dataStore id
      */
     public final String DID_REGEXP = "datastore-\\d+";
+    /**
+     * Windows系统标识
+     */
+    public final String OS_WINDOWS = "WINDOWS";
+    /**
+     * Windows Workgroup 标识
+     */
+    public final String WINDOWS_WORKGROUP = "WORKGROUP";
+    /**
+     * local Domain
+     */
+    public final String LOCAL_DOMAIN = "LocalDomain";
+    /**
+     * 管理网卡
+     */
+    public final String MANAGE_TYPE_NETWORK = "manage";
 }

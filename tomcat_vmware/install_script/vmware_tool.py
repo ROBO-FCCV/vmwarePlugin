@@ -499,7 +499,7 @@ class VmwareUser:
         """
         self.check_link()
         with open(self.vmware_yml, 'r') as load_file:
-            load_dict = yaml.load(load_file, Loader=yaml.FullLoader)
+            load_dict = yaml.safe_load(load_file)
             vmware_items = load_dict.get('vmware').get('configs')
             if vmware_items:
                 return self.find_item(vmware_items, ip)
@@ -513,7 +513,7 @@ class VmwareUser:
         """
         self.check_link()
         with open(self.vmware_yml, 'r') as load_file:
-            load_dict = yaml.load(load_file, Loader=yaml.FullLoader)
+            load_dict = yaml.safe_load(load_file)
             if load_dict is None:
                 return 0
             if load_dict.get('vmware').get('configs'):

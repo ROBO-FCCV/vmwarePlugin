@@ -6,9 +6,12 @@ package com.vmware.sample.util;
 
 import com.huawei.kmc.common.AppException;
 import com.huawei.kmc.crypt.CryptoAPI;
+
 import com.vmware.sample.enums.RestCodeEnum;
 import com.vmware.sample.exception.PluginException;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.ResourceUtils;
 

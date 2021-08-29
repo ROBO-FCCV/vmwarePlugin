@@ -302,7 +302,7 @@ public class HostSDKServiceImpl implements HostService {
     private String lookupSerialNumber(List<HostSystemIdentificationInfo> otherIdentifyingInfo) {
         for (HostSystemIdentificationInfo hostSystemIdentificationInfo : otherIdentifyingInfo) {
             if (hostSystemIdentificationInfo.getIdentifierType().getKey().equalsIgnoreCase("SerialNumberTag")) {
-                hostSystemIdentificationInfo.getIdentifierValue();
+                return hostSystemIdentificationInfo.getIdentifierValue();
             }
         }
         return Strings.EMPTY;

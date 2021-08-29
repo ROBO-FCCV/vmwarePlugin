@@ -4,6 +4,7 @@
 
 package com.vmware.sample.service.impl;
 
+import com.vmware.sample.consts.Constants;
 import com.vmware.sample.consts.VMConstants;
 import com.vmware.sample.consts.VMwareConstants;
 import com.vmware.sample.enums.RestCodeEnum;
@@ -107,6 +108,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
@@ -119,6 +121,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -132,8 +136,11 @@ import java.util.stream.Collectors;
 @Service("vm-sdk-service")
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class VMSDKServiceImpl implements VMService {
+    // 网卡初始标识key
+    private static final int INIT_DEVICE_KEY = 4000;
     private final ObjectMapper objectMapper;
     private final VmwareSDKClient vmwareSDKClient;
+    private final ThreadPoolTaskExecutor taskExecutor;
 
     @Override
     public List<VirtualMachineInfo> getVms(String vmwareId) {
@@ -860,7 +867,7 @@ public class VMSDKServiceImpl implements VMService {
         try {
             ManagedObjectReference taskMor = vMwareSDK.getVimPort()
                 .createVMTask(vmFolderRef, vmConfigSpec, resourceRef, hostSystem);
-            getTaskState(taskMor, vmwareId);
+            checkCreateVMTaskAndPowerOnVMAsync(taskMor, vmwareId);
             return taskMor.getValue();
         } catch (AlreadyExistsFaultMsg e) {
             log.error("AlreadyExistsFaultMsg", SensitiveExceptionUtils.hideSensitiveInfo(e));
@@ -955,7 +962,11 @@ public class VMSDKServiceImpl implements VMService {
         }
     }
 
-    private void getTaskState(ManagedObjectReference taskMor, String vmwareId) {
+    private void checkCreateVMTaskAndPowerOnVMAsync(ManagedObjectReference taskMor, String vmwareId) {
+        taskExecutor.execute(() -> loopCheckCreateVMTaskAndPowerOnVm(taskMor, vmwareId));
+    }
+
+    private void loopCheckCreateVMTaskAndPowerOnVm(ManagedObjectReference taskMor, String vmwareId) {
         VMwareSDK sdkInstance = vmwareSDKClient.getSDKInstance(vmwareId);
         List<String> properties = Collections.singletonList("info");
         boolean flag = true;
@@ -964,15 +975,15 @@ public class VMSDKServiceImpl implements VMService {
             if (objectContents.get(0).getPropSet().get(0).getVal() instanceof TaskInfo) {
                 TaskInfo task = (TaskInfo) objectContents.get(0).getPropSet().get(0).getVal();
                 String createStatus = task.getState().toString();
-                if (StringUtils.equalsIgnoreCase(TaskInfoState.SUCCESS.value(), createStatus)
-                    && task.getResult() instanceof ManagedObjectReference) {
+                if (StringUtils.equalsIgnoreCase(TaskInfoState.SUCCESS.value(), createStatus) &&
+                    task.getResult() instanceof ManagedObjectReference) {
                     flag = false;
                     ManagedObjectReference vmMor = (ManagedObjectReference) task.getResult();
                     powerStartByVmId(vmwareId, vmMor.getValue());
                 } else if (StringUtils.equalsIgnoreCase(TaskInfoState.ERROR.value(), createStatus)) {
                     throw new PluginException(RestCodeEnum.CREATE_VM_ERROR);
                 } else {
-                    flag = false;
+                    log.info("loop until CreateVM_Task finished.");
                 }
             }
         }
@@ -1021,8 +1032,8 @@ public class VMSDKServiceImpl implements VMService {
         try {
             virtualMachineConfigOption = vMwareSDK.getVimPort().queryConfigOption(environmentBrowser, null, hostMor);
             VirtualHardwareOption virtualHardwareOption = virtualMachineConfigOption.getHardwareOptions();
-            if (vmConfigurationBasicInfo.getCpuInfo().getCoreSockets() > virtualHardwareOption.getNumCoresPerSocket()
-                .getMax()) {
+            if (vmConfigurationBasicInfo.getCpuInfo().getCoreSockets() >
+                virtualHardwareOption.getNumCoresPerSocket().getMax()) {
                 return true;
             }
             if (vmConfigurationBasicInfo.getMemorySize() > virtualHardwareOption.getMemoryMB().getMax()) {
@@ -1161,7 +1172,11 @@ public class VMSDKServiceImpl implements VMService {
         CustomizationSpec customization = new CustomizationSpec();
         if (CollectionUtils.isNotEmpty(vmTemplateInfo.getNis())) {
             for (Network ni : vmTemplateInfo.getNis()) {
-                customization.getNicSettingMap().add(addAdapter(ni));
+                if (ni.isManageTypeNetwork()) {
+                    customization.getNicSettingMap().add(0, addAdapter(ni));
+                } else {
+                    customization.getNicSettingMap().add(addAdapter(ni));
+                }
             }
         }
         processingIdentification(vmTemplateInfo, customization);
@@ -1190,34 +1205,55 @@ public class VMSDKServiceImpl implements VMService {
             guiUnattended.setAutoLogonCount(0);
             CustomizationFixedName fixedName = new CustomizationFixedName();
             fixedName.setName(hostName(vmTemplateInfo.getVmName()));
-            if ("WINDOWS".equalsIgnoreCase(vmTemplateInfo.getOsType())) {
-                log.info("windows enter...");
-                CustomizationUserData userdata = new CustomizationUserData();
-                userdata.setComputerName(fixedName);
-                userdata.setFullName(vmTemplateInfo.getVmName());
-                userdata.setOrgName("LocalDomain");
-                userdata.setProductId("");
-                CustomizationIdentification identification = new CustomizationIdentification();
-                identification.setJoinWorkgroup("WORKGROUP");
-                identification.setDomainAdminPassword(customizationPassword);
-                CustomizationSysprep identitySettings = new CustomizationSysprep();
-                identitySettings.setGuiUnattended(guiUnattended);
-                identitySettings.setUserData(userdata);
-                identitySettings.setIdentification(identification);
-                CustomizationLicenseFilePrintData licenseFilePrintData = new CustomizationLicenseFilePrintData();
-                licenseFilePrintData.setAutoUsers(5);
-                licenseFilePrintData.setAutoMode(CustomizationLicenseDataMode.PER_SERVER);
-                identitySettings.setLicenseFilePrintData(licenseFilePrintData);
-                customization.setIdentity(identitySettings);
+            CustomizationGlobalIPSettings globalIPSettings = new CustomizationGlobalIPSettings();
+            if (Constants.OS_WINDOWS.equalsIgnoreCase(vmTemplateInfo.getOsType())) {
+                processingWindowsIdentification(fixedName, vmTemplateInfo.getVmName(), customizationPassword,
+                    guiUnattended, customization);
             } else {
                 CustomizationLinuxPrep identitySettings = new CustomizationLinuxPrep();
                 identitySettings.setHostName(fixedName);
                 identitySettings.setDomain("localdomain");
                 customization.setIdentity(identitySettings);
+                if (CollectionUtils.isNotEmpty(vmTemplateInfo.getNis()) && getGlobalIps(vmTemplateInfo).size() > 0) {
+                    globalIPSettings.getDnsServerList().addAll(getGlobalIps(vmTemplateInfo));
+                }
             }
-            CustomizationGlobalIPSettings globalIPSettings = new CustomizationGlobalIPSettings();
             customization.setGlobalIPSettings(globalIPSettings);
         }
+    }
+
+    private  List<String> getGlobalIps(VmTemplateInfo vmTemplateInfo) {
+        return Optional.ofNullable(vmTemplateInfo.getNis())
+            .orElse(Collections.emptyList())
+            .stream()
+            .filter(network -> Objects.nonNull(network) && CollectionUtils.isNotEmpty(network.getDns()))
+            .flatMap(network -> network.getDns().stream())
+            .filter(StringUtils::isNotEmpty)
+            .distinct()
+            .collect(Collectors.toList());
+    }
+
+    private void processingWindowsIdentification(CustomizationFixedName fixedName, String vmName,
+        CustomizationPassword customizationPassword, CustomizationGuiUnattended guiUnattended,
+        CustomizationSpec customization) {
+        log.info("Create Windows customization identification enter.");
+        CustomizationUserData userdata = new CustomizationUserData();
+        userdata.setComputerName(fixedName);
+        userdata.setFullName(vmName);
+        userdata.setOrgName(Constants.LOCAL_DOMAIN);
+        userdata.setProductId("");
+        CustomizationIdentification identification = new CustomizationIdentification();
+        identification.setJoinWorkgroup(Constants.WINDOWS_WORKGROUP);
+        identification.setDomainAdminPassword(customizationPassword);
+        CustomizationSysprep identitySettings = new CustomizationSysprep();
+        identitySettings.setGuiUnattended(guiUnattended);
+        identitySettings.setUserData(userdata);
+        identitySettings.setIdentification(identification);
+        CustomizationLicenseFilePrintData licenseFilePrintData = new CustomizationLicenseFilePrintData();
+        licenseFilePrintData.setAutoUsers(5);
+        licenseFilePrintData.setAutoMode(CustomizationLicenseDataMode.PER_SERVER);
+        identitySettings.setLicenseFilePrintData(licenseFilePrintData);
+        customization.setIdentity(identitySettings);
     }
 
     private CustomizationAdapterMapping addAdapter(Network network) {
@@ -1228,6 +1264,17 @@ public class VMSDKServiceImpl implements VMService {
         adapter3.setDnsDomain("localdomain");
         adapter3.setSubnetMask(network.getNetmask());
         adapter3.getGateway().add(network.getGateway());
+
+        List<String> dnsServerList = Optional.ofNullable(network.getDns())
+            .orElse(Collections.emptyList())
+            .stream()
+            .filter(StringUtils::isNotEmpty)
+            .distinct()
+            .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(dnsServerList)) {
+            // dns 列表不为空时，添加到自定义网卡中
+            adapter3.getDnsServerList().addAll(dnsServerList);
+        }
         CustomizationAdapterMapping map3 = new CustomizationAdapterMapping();
         map3.setAdapter(adapter3);
         return map3;
@@ -1243,6 +1290,7 @@ public class VMSDKServiceImpl implements VMService {
     private List<VirtualDeviceConfigSpec> getNetworks(List<NetworkInfo> networkInfos) {
         List<VirtualDeviceConfigSpec> virtualDeviceConfigSpecList = new ArrayList<>();
         if (!CollectionUtils.isEmpty(networkInfos)) {
+            int key = INIT_DEVICE_KEY;
             for (NetworkInfo networkInfo : networkInfos) {
                 VirtualDeviceConfigSpec virtualDeviceConfigSpec = new VirtualDeviceConfigSpec();
                 virtualDeviceConfigSpec.setOperation(VirtualDeviceConfigSpecOperation.ADD);
@@ -1256,7 +1304,7 @@ public class VMSDKServiceImpl implements VMService {
                 VirtualEthernetCardNetworkBackingInfo nicBackingInfo = new VirtualEthernetCardNetworkBackingInfo();
                 nicBackingInfo.setDeviceName(networkInfo.getName());
                 virtualEthernetCard.setBacking(nicBackingInfo);
-                virtualEthernetCard.setKey(4);
+                virtualEthernetCard.setKey(key++);
                 virtualDeviceConfigSpec.setDevice(virtualEthernetCard);
                 virtualDeviceConfigSpecList.add(virtualDeviceConfigSpec);
             }

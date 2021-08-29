@@ -22,17 +22,17 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties(prefix = "com/huawei/kmc")
+@ConfigurationProperties(prefix = "kmc")
 public class KmcProperties {
     private boolean enabled = false;
 
     /**
      * Kmc utils
      *
-     * @return com.huawei.kmc utils
+     * @return kmc utils
      */
     @Bean
-    @ConditionalOnProperty(name = "com.huawei.kmc.enabled", havingValue = "true")
+    @ConditionalOnProperty(name = "kmc.enabled", havingValue = "true")
     public KmcUtils kmcUtils() {
         return new KmcUtils();
     }

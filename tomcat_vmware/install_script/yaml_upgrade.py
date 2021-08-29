@@ -3,7 +3,7 @@ import os
 from sys import argv
 import yaml
 import subprocess
-import com.huawei.kmc.com.huawei.kmc as kmc_tools
+import kmc.kmc as kmc_tools
 encrpy_jar = "crypt-tool-jar-with-dependencies.jar"
 
 
@@ -26,10 +26,10 @@ def change_vmware_yaml(file_path, in_jar_path):
                 os.remove(en_file)
             with open(en_file, "w") as temp_file:
                 temp_file.write("")
-            cmd = "export LD_LIBRARY_PATH=/opt/huawei/robo/com.huawei.kmc/lib;" \
+            cmd = "export LD_LIBRARY_PATH=/opt/huawei/robo/kmc/lib;" \
                   "echo %s|java -cp %s " \
                   "com.huawei.robo.crypt.tool.Application " \
-                  "-e 0 %s" % (cur_password, jar_path, en_file)
+                  "-vmware 0 %s" % (cur_password, jar_path, en_file)
             (status, output) = subprocess.getstatusoutput(cmd)
             if status != 0:
                 print(output)
