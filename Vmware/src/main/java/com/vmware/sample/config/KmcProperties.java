@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties(prefix = "com/huawei/kmc")
+@ConfigurationProperties(prefix = "kmc")
 public class KmcProperties {
     private boolean enabled = false;
 
