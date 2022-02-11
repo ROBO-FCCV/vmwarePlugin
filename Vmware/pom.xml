@@ -32,7 +32,7 @@
         <vmc.draas.version>1.9.0</vmc.draas.version>
         <oidc-oauth2.version>0.0.1</oidc-oauth2.version>
 
-        <json-smart.version>2.3</json-smart.version>
+        <json-smart.version>2.4.5</json-smart.version>
         <pac4j.version>3.3.0</pac4j.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
